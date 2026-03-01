@@ -445,18 +445,21 @@ readCTRSoundInfo(struct CTRSoundInfo *soundInfo, FILE *soundArchiveFile, u32 (*r
 			fprintf(stderr, "Invalid extra info in sound info.\n");
 			return STATUS_ERR;
 		}
+		break;
 	case REFID_SOUNDARCHIVEFILE_WAVESOUNDINFO:
 		fseek(soundArchiveFile, soundInfo->filePosition + soundInfo->extraInfoLink.offset, SEEK_SET);
 		if (readCTRWaveSoundInfo(&soundInfo->waveSoundInfo, soundArchiveFile, readBytes) != STATUS_OK) {
 			fprintf(stderr, "Invalid extra info in sound info.\n");
 			return STATUS_ERR;
 		}
+		break;
 	case REFID_SOUNDARCHIVEFILE_SEQUENCESOUNDINFO:
 		fseek(soundArchiveFile, soundInfo->filePosition + soundInfo->extraInfoLink.offset, SEEK_SET);
 		if (readCTRSequenceSoundInfo(&soundInfo->sequenceSoundInfo, soundArchiveFile, readBytes) != STATUS_OK) {
 			fprintf(stderr, "Invalid extra info in sound info.\n");
 			return STATUS_ERR;
 		}
+		break;
 	default:
 		break;
 	}
@@ -699,11 +702,13 @@ readCTRFileInfo(struct CTRFileInfo *fileInfo, FILE *soundArchiveFile, u32 (*read
 			fprintf(stderr, "Invalid internal file location info\n");
 			return STATUS_ERR;
 		}
+		break;
 	case REFID_SOUNDARCHIVEFILE_EXTERNALFILEINFO:
 		if (readCTRExternalFileLocationInfo(&fileInfo->externalFileInfo, soundArchiveFile, readBytes) != STATUS_OK) {
 			fprintf(stderr, "Invalid external file location info\n");
 			return STATUS_ERR;
 		}
+		break;
 	default:
 		break;
 	}
