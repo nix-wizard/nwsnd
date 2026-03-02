@@ -143,8 +143,7 @@ readLinkTable(struct LinkTable *linkTable, FILE *file, u32 (*readBytes)(FILE *fi
 {
 	linkTable->filePosition = ftell(file);
 	linkTable->count = readBytes(file, 4);
-	linkTable->table = malloc(sizeof(struct Link) * linkTable->count);
-	addPointerToPointerList(linkTable->table, pointerList);
+	ALLOCATE(linkTable->table, sizeof(struct Link) * linkTable->count);
 	for (u32 i = 0; i < linkTable->count; i += 1) {
 		if (readLink(&linkTable->table[i], file, readBytes) != STATUS_OK) {
 			fprintf(stderr, "Invalid link in link table.\n");
@@ -160,8 +159,7 @@ readLinkWithLengthTable(struct LinkWithLengthTable *linkTable, FILE *file, u32 (
 {
 	linkTable->filePosition = ftell(file);
 	linkTable->count = readBytes(file, 4);
-	linkTable->table = malloc(sizeof(struct LinkWithLength) * linkTable->count);
-	addPointerToPointerList(linkTable->table, pointerList);
+	ALLOCATE(linkTable->table, sizeof(struct LinkWithLength) * linkTable->count);
 	for (u32 i = 0; i < linkTable->count; i += 1) {
 		if (readLinkWithLength(&linkTable->table[i], file, readBytes) != STATUS_OK) {
 			fprintf(stderr, "Invalid link in link with length table.\n");
@@ -241,8 +239,7 @@ readU8Table(struct U8Table *u8Table, FILE *file, u32 (*readBytes)(FILE *file, u3
 {
 	u8Table->filePosition = ftell(file);
 	u8Table->count = readBytes(file, 4);
-	u8Table->table = malloc(sizeof(u8) * u8Table->count);
-	addPointerToPointerList(u8Table->table, pointerList);
+	ALLOCATE(u8Table->table, sizeof(u8) * u8Table->count);
 	for (u32 i = 0; i < u8Table->count; i += 1) {
 		u8Table->table[i] = readBytes(file, 1);
 	}
@@ -255,8 +252,7 @@ readU32Table(struct U32Table *u32Table, FILE *file, u32 (*readBytes)(FILE *file,
 {
 	u32Table->filePosition = ftell(file);
 	u32Table->count = readBytes(file, 4);
-	u32Table->table = malloc(sizeof(u32) * u32Table->count);
-	addPointerToPointerList(u32Table->table, pointerList);
+	ALLOCATE(u32Table->table, sizeof(u32) * u32Table->count);
 	for (u32 i = 0; i < u32Table->count; i += 1) {
 		u32Table->table[i] = readBytes(file, 4);
 	}

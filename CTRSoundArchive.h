@@ -383,16 +383,16 @@ Status
 readCTRSoundGroupInfo(struct CTRSoundGroupInfo *soundGroupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRBankInfo(struct CTRBankInfo *bankInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
+readCTRBankInfo(struct CTRBankInfo *bankInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRWaveArchiveInfo(struct CTRWaveArchiveInfo *waveArchiveInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
+readCTRWaveArchiveInfo(struct CTRWaveArchiveInfo *waveArchiveInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRGroupInfo(struct CTRGroupInfo *groupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
+readCTRGroupInfo(struct CTRGroupInfo *groupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRPlayerInfo(struct CTRPlayerInfo *playerInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
+readCTRPlayerInfo(struct CTRPlayerInfo *playerInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
 readCTRInternalFileLocationInfo(struct CTRInternalFileLocationInfo *internalFileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
@@ -401,7 +401,7 @@ Status
 readCTRExternalFileLocationInfo(struct CTRExternalFileLocationInfo *externalFileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
 
 Status
-readCTRFileInfo(struct CTRFileInfo *fileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
+readCTRFileInfo(struct CTRFileInfo *fileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
 readCTRSoundArchivePlayerInfo(struct CTRSoundArchivePlayerInfo *soundArchivePlayerInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));

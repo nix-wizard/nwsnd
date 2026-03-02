@@ -1,6 +1,8 @@
 /* See LICENSE file for copyright and license details. */
 #include <stdio.h>
 
+#define ALLOCATE(POINTER, SIZE) POINTER = malloc(SIZE); addPointerToPointerList(POINTER, pointerList);
+
 typedef unsigned char u8;
 typedef unsigned short int u16;
 typedef unsigned int u32;
@@ -230,8 +232,8 @@ struct OptionParameter {
 };
 
 struct BitFlag {
-		u32 bitIndex;
-		u32 *destination;
+	u32 bitIndex;
+	u32 *destination;
 };
 
 struct U8Table {

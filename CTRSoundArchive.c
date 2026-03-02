@@ -3,6 +3,28 @@
 
 #include "CTRSoundArchive.h"
 
+#define BITFLAG(OPTIONPARAMETER) \
+	u32 currentIndex; \
+	for (u32 i = 0; i < 2; i += 1) { \
+		currentIndex = getBitFlagParameterIndex(OPTIONPARAMETER.bitFlag, optionParams[i].bitIndex); \
+		if (currentIndex != FALSE) { \
+			fseek(soundArchiveFile, OPTIONPARAMETER.filePosition + (currentIndex * 4), SEEK_SET); \
+			*optionParams->destination = readBytes(soundArchiveFile, 4); \
+		} \
+	}
+#define INFO(TABLEINDEX, LINKTABLE, INFO, TYPE, READER) \
+	fseek(soundArchiveFile, infoPartition->body.filePosition + infoPartition->body.tableLinks[TABLEINDEX].offset, SEEK_SET); \
+	readLinkTable(&infoPartition->body.LINKTABLE, soundArchiveFile, readBytes, pointerList); \
+	ALLOCATE(infoPartition->body.INFO, sizeof(TYPE) * infoPartition->body.LINKTABLE.count); \
+	for (u32 i = 0; i < infoPartition->body.LINKTABLE.count; i += 1) { \
+		fseek(soundArchiveFile, infoPartition->body.LINKTABLE.filePosition + infoPartition->body.LINKTABLE.table[i].offset, SEEK_SET); \
+		if (READER(&infoPartition->body.INFO[i], soundArchiveFile, readBytes, pointerList) != STATUS_OK) { \
+			fprintf(stderr, "Invalid info index TABLEINDEX.\n"); \
+			return STATUS_ERR; \
+		} \
+	}
+
+
 Status
 readCTRItemID(struct CTRItemID *itemID, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
 {
@@ -18,8 +40,7 @@ readCTRItemIDTable(struct CTRItemIDTable *itemIDTable, FILE *soundArchiveFile, u
 {
 	itemIDTable->filePosition = ftell(soundArchiveFile);
 	itemIDTable->count = readBytes(soundArchiveFile, 4);
-	itemIDTable->table = malloc(sizeof(struct CTRItemID) * itemIDTable->count);
-	addPointerToPointerList(itemIDTable->table, pointerList);
+	ALLOCATE(itemIDTable->table, sizeof(struct CTRItemID) * itemIDTable->count);
 	for (u32 i = 0; i < itemIDTable->count; i += 1) {
 		if (readCTRItemID(&itemIDTable->table[i], soundArchiveFile, readBytes) != STATUS_OK) {
 			fprintf(stderr, "Invalid item ID in item ID table.\n");
@@ -53,8 +74,7 @@ readCTRSoundArchiveHeader(struct CTRSoundArchiveHeader *header, FILE *soundArchi
 
 	u32 (*readBytes)(FILE *file, u32 bytes) = (*readBytesPointer);
 
-	header->partitionLinks = malloc(header->fileHeader.partitionCount * sizeof(struct LinkWithLength));
-	addPointerToPointerList(header->partitionLinks, pointerList);
+	ALLOCATE(header->partitionLinks, header->fileHeader.partitionCount * sizeof(struct LinkWithLength));
 	for (u32 i = 0; i < header->fileHeader.partitionCount; i++) {
 		if (readLinkWithLength(&header->partitionLinks[i], soundArchiveFile, readBytes) != STATUS_OK) {
 			fprintf(stderr, "Error reading link.\n");
@@ -114,8 +134,7 @@ readCTRNodeTable(struct CTRNodeTable *nodeTable, FILE *soundArchiveFile, u32 (*r
 	nodeTable->filePosition = ftell(soundArchiveFile);
 	nodeTable->count = readBytes(soundArchiveFile, 4);
 
-	nodeTable->nodes = malloc(sizeof(struct CTRNode) * nodeTable->count);
-	addPointerToPointerList(nodeTable->nodes, pointerList);
+	ALLOCATE(nodeTable->nodes, sizeof(struct CTRNode) * nodeTable->count);
 	for (u32 i = 0; i < nodeTable->count; i++) {
 		if (readCTRNode(&nodeTable->nodes[i], soundArchiveFile, readBytes) != STATUS_OK) {
 			fprintf(stderr, "Invalid node in node table.");
@@ -166,13 +185,11 @@ readCTRSoundArchiveStringPartition(struct CTRSoundArchiveStringPartition *string
 
 	readLinkWithLengthTable(&stringPartition->body.filenameLinkTable, soundArchiveFile, readBytes, pointerList);
 
-	stringPartition->body.filenameTable = malloc(stringPartition->body.filenameLinkTable.size);
-	addPointerToPointerList(stringPartition->body.filenameTable, pointerList);
+	ALLOCATE(stringPartition->body.filenameTable, stringPartition->body.filenameLinkTable.size);
 	for (u32 i = 0; i < stringPartition->body.filenameLinkTable.count; i++) {
 		fseek(soundArchiveFile, filenameTableBase + stringPartition->body.filenameLinkTable.table[i].offset, SEEK_SET);
 		stringPartition->body.filenameTable[i].filePosition = ftell(soundArchiveFile);
-		stringPartition->body.filenameTable[i].filename = malloc(stringPartition->body.filenameLinkTable.table[i].length);
-		addPointerToPointerList(stringPartition->body.filenameTable[i].filename, pointerList);
+		ALLOCATE(stringPartition->body.filenameTable[i].filename, stringPartition->body.filenameLinkTable.table[i].length);
 		fread(stringPartition->body.filenameTable[i].filename, 1, stringPartition->body.filenameLinkTable.table[i].length, soundArchiveFile);
 	}
 
@@ -273,8 +290,7 @@ readCTRStreamSoundInfo(struct CTRStreamSoundInfo *streamSoundInfo, FILE *soundAr
 			fprintf(stderr, "Invalid stream track info link table.\n");
 			return STATUS_ERR;
 		}
-		streamSoundInfo->streamTrackInfo = malloc(sizeof(struct CTRStreamTrackInfo) * streamSoundInfo->streamTrackInfoLinkTable.count);
-		addPointerToPointerList(streamSoundInfo->streamTrackInfo, pointerList);
+		ALLOCATE(streamSoundInfo->streamTrackInfo, sizeof(struct CTRStreamTrackInfo) * streamSoundInfo->streamTrackInfoLinkTable.count);
 		for (u32 i = 0; i < streamSoundInfo->streamTrackInfoLinkTable.count; i += 1) {
 			fseek(soundArchiveFile, streamSoundInfo->streamTrackInfoLinkTable.filePosition + streamSoundInfo->streamTrackInfoLinkTable.table[i].offset, SEEK_SET);
 			if (readCTRStreamTrackInfo(&streamSoundInfo->streamTrackInfo[i], soundArchiveFile, readBytes, pointerList) != STATUS_OK) {
@@ -319,15 +335,7 @@ readCTRWaveSoundInfo(struct CTRWaveSoundInfo *waveSoundInfo, FILE *soundArchiveF
 	struct BitFlag optionParams[1] = {
 		{0x00, &waveSoundInfo->priority}
 	};
-
-	u32 currentIndex;
-	for (u32 i = 0; i < 1; i += 1) {
-		currentIndex = getBitFlagParameterIndex(waveSoundInfo->optionParameter.bitFlag, optionParams[i].bitIndex);
-		if (currentIndex != FALSE) {
-			fseek(soundArchiveFile, waveSoundInfo->optionParameter.filePosition + (currentIndex * 4), SEEK_SET);
-			*optionParams->destination = readBytes(soundArchiveFile, 4);
-		}
-	}
+	BITFLAG(waveSoundInfo->optionParameter);
 
 	/* Priority params */
 	waveSoundInfo->priorityParams.priorityChannelPriority = getByte(waveSoundInfo->priority, 0);
@@ -354,15 +362,7 @@ readCTRSequenceSoundInfo(struct CTRSequenceSoundInfo *sequenceSoundInfo, FILE *s
 		{0x00, &sequenceSoundInfo->startOffset},
 		{0x01, &sequenceSoundInfo->priority}
 	};
-
-	u32 currentIndex;
-	for (u32 i = 0; i < 2; i += 1) {
-		currentIndex = getBitFlagParameterIndex(sequenceSoundInfo->optionParameter.bitFlag, optionParams[i].bitIndex);
-		if (currentIndex != FALSE) {
-			fseek(soundArchiveFile, sequenceSoundInfo->optionParameter.filePosition + (currentIndex * 4), SEEK_SET);
-			*optionParams->destination = readBytes(soundArchiveFile, 4);
-		}
-	}
+	BITFLAG(sequenceSoundInfo->optionParameter);
 
 	/* Priority params */
 	sequenceSoundInfo->priorityParams.priorityChannelPriority = getByte(sequenceSoundInfo->priority, 0);
@@ -404,15 +404,7 @@ readCTRSoundInfo(struct CTRSoundInfo *soundInfo, FILE *soundArchiveFile, u32 (*r
 		{0x1e, &soundInfo->userParam1},
 		{0x0f, &soundInfo->userParam0}
 	};
-
-	u32 currentIndex;
-	for (u32 i = 0; i < 12; i += 1) {
-		currentIndex = getBitFlagParameterIndex(soundInfo->optionParameter.bitFlag, optionParams[i].bitIndex);
-		if (currentIndex != FALSE) {
-			fseek(soundArchiveFile, soundInfo->optionParameter.filePosition + (currentIndex * 4), SEEK_SET);
-			*optionParams->destination = readBytes(soundArchiveFile, 4);
-		}
-	}
+	BITFLAG(soundInfo->optionParameter);
 
 	/* Pan param */
 	soundInfo->panParams.panMode = getByte(soundInfo->panParam, 0);
@@ -519,15 +511,7 @@ readCTRSoundGroupInfo(struct CTRSoundGroupInfo *soundGroupInfo, FILE *soundArchi
 	struct BitFlag optionParams[1] = {
 		{0x00, &soundGroupInfo->stringID}
 	};
-
-	u32 currentIndex;
-	for (u32 i = 0; i < 1; i += 1) {
-		currentIndex = getBitFlagParameterIndex(soundGroupInfo->optionParameter.bitFlag, optionParams[i].bitIndex);
-		if (currentIndex != FALSE) {
-			fseek(soundArchiveFile, soundGroupInfo->optionParameter.filePosition + (currentIndex * 4), SEEK_SET);
-			*optionParams->destination = readBytes(soundArchiveFile, 4);
-		}
-	}
+	BITFLAG(soundGroupInfo->optionParameter);
 
 	/* File ID table */
 	fseek(soundArchiveFile, soundGroupInfo->filePosition + soundGroupInfo->toFileIdTable.offset, SEEK_SET);
@@ -549,7 +533,7 @@ readCTRSoundGroupInfo(struct CTRSoundGroupInfo *soundGroupInfo, FILE *soundArchi
 }
 
 Status
-readCTRBankInfo(struct CTRBankInfo *bankInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
+readCTRBankInfo(struct CTRBankInfo *bankInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	bankInfo->filePosition = ftell(soundArchiveFile);
 	bankInfo->fileID = readBytes(soundArchiveFile, 4);
@@ -565,21 +549,13 @@ readCTRBankInfo(struct CTRBankInfo *bankInfo, FILE *soundArchiveFile, u32 (*read
 	struct BitFlag optionParams[1] = {
 		{0x00, &bankInfo->stringID}
 	};
-
-	u32 currentIndex;
-	for (u32 i = 0; i < 1; i += 1) {
-		currentIndex = getBitFlagParameterIndex(bankInfo->optionParameter.bitFlag, optionParams[i].bitIndex);
-		if (currentIndex != FALSE) {
-			fseek(soundArchiveFile, bankInfo->optionParameter.filePosition + (currentIndex * 4), SEEK_SET);
-			*optionParams->destination = readBytes(soundArchiveFile, 4);
-		}
-	}
+	BITFLAG(bankInfo->optionParameter);
 
 	return STATUS_OK;
 }
 
 Status
-readCTRWaveArchiveInfo(struct CTRWaveArchiveInfo *waveArchiveInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
+readCTRWaveArchiveInfo(struct CTRWaveArchiveInfo *waveArchiveInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	waveArchiveInfo->filePosition = ftell(soundArchiveFile);
 	waveArchiveInfo->fileID = readBytes(soundArchiveFile, 4);
@@ -597,21 +573,13 @@ readCTRWaveArchiveInfo(struct CTRWaveArchiveInfo *waveArchiveInfo, FILE *soundAr
 		{0x00, &waveArchiveInfo->stringID},
 		{0x01, &waveArchiveInfo->waveCount}
 	};
-
-	u32 currentIndex;
-	for (u32 i = 0; i < 2; i += 1) {
-		currentIndex = getBitFlagParameterIndex(waveArchiveInfo->optionParameter.bitFlag, optionParams[i].bitIndex);
-		if (currentIndex != FALSE) {
-			fseek(soundArchiveFile, waveArchiveInfo->optionParameter.filePosition + (currentIndex * 4), SEEK_SET);
-			*optionParams->destination = readBytes(soundArchiveFile, 4);
-		}
-	}
+	BITFLAG(waveArchiveInfo->optionParameter);
 
 	return STATUS_OK;
 }
 
 Status
-readCTRGroupInfo(struct CTRGroupInfo *groupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
+readCTRGroupInfo(struct CTRGroupInfo *groupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	groupInfo->filePosition = ftell(soundArchiveFile);
 	groupInfo->fileID = readBytes(soundArchiveFile, 4);
@@ -623,21 +591,13 @@ readCTRGroupInfo(struct CTRGroupInfo *groupInfo, FILE *soundArchiveFile, u32 (*r
 	struct BitFlag optionParams[1] = {
 		{0x00, &groupInfo->stringID}
 	};
-
-	u32 currentIndex;
-	for (u32 i = 0; i < 1; i += 1) {
-		currentIndex = getBitFlagParameterIndex(groupInfo->optionParameter.bitFlag, optionParams[i].bitIndex);
-		if (currentIndex != FALSE) {
-			fseek(soundArchiveFile, groupInfo->optionParameter.filePosition + (currentIndex * 4), SEEK_SET);
-			*optionParams->destination = readBytes(soundArchiveFile, 4);
-		}
-	}
+	BITFLAG(groupInfo->optionParameter);
 
 	return STATUS_OK;
 }
 
 Status
-readCTRPlayerInfo(struct CTRPlayerInfo *playerInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
+readCTRPlayerInfo(struct CTRPlayerInfo *playerInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	playerInfo->filePosition = ftell(soundArchiveFile);
 	playerInfo->playableSoundMax = readBytes(soundArchiveFile, 4);
@@ -649,15 +609,7 @@ readCTRPlayerInfo(struct CTRPlayerInfo *playerInfo, FILE *soundArchiveFile, u32 
 		{0x00, &playerInfo->stringID},
 		{0x01, &playerInfo->heapSize}
 	};
-
-	u32 currentIndex;
-	for (u32 i = 0; i < 2; i += 1) {
-		currentIndex = getBitFlagParameterIndex(playerInfo->optionParameter.bitFlag, optionParams[i].bitIndex);
-		if (currentIndex != FALSE) {
-			fseek(soundArchiveFile, playerInfo->optionParameter.filePosition + (currentIndex * 4), SEEK_SET);
-			*optionParams->destination = readBytes(soundArchiveFile, 4);
-		}
-	}
+	BITFLAG(playerInfo->optionParameter);
 
 	return STATUS_OK;
 }
@@ -684,7 +636,7 @@ readCTRExternalFileLocationInfo(struct CTRExternalFileLocationInfo *externalFile
 }
 
 Status
-readCTRFileInfo(struct CTRFileInfo *fileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
+readCTRFileInfo(struct CTRFileInfo *fileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	fileInfo->filePosition = ftell(soundArchiveFile);
 	if (readLink(&fileInfo->toFileLocationInfo, soundArchiveFile, readBytes) != STATUS_OK) {
@@ -751,99 +703,28 @@ readCTRSoundArchiveInfoPartition(struct CTRSoundArchiveInfoPartition *infoPartit
 		}
 	}
 
-	/* TODO: Clean up here */
-
 	/* Sound info */
-	fseek(soundArchiveFile, infoPartition->body.filePosition + infoPartition->body.tableLinks[0].offset, SEEK_SET);
-	readLinkTable(&infoPartition->body.soundInfoLinkTable, soundArchiveFile, readBytes, pointerList);
-	infoPartition->body.soundInfo = malloc(sizeof(struct CTRSoundInfo) * infoPartition->body.soundInfoLinkTable.count);
-	addPointerToPointerList(infoPartition->body.soundInfo, pointerList);
-	for (u32 i = 0; i < infoPartition->body.soundInfoLinkTable.count; i += 1) {
-		fseek(soundArchiveFile, infoPartition->body.soundInfoLinkTable.filePosition + infoPartition->body.soundInfoLinkTable.table[i].offset, SEEK_SET);
-		if (readCTRSoundInfo(&infoPartition->body.soundInfo[i], soundArchiveFile, readBytes, pointerList) != STATUS_OK) {
-			fprintf(stderr, "Invalid sound info.\n");
-			return STATUS_ERR;
-		}
-	}
+	INFO(0, soundInfoLinkTable, soundInfo, struct CTRSoundInfo, readCTRSoundInfo);
 
 	/* Sound group info */
-	fseek(soundArchiveFile, infoPartition->body.filePosition + infoPartition->body.tableLinks[1].offset, SEEK_SET);
-	readLinkTable(&infoPartition->body.soundGroupInfoLinkTable, soundArchiveFile, readBytes, pointerList);
-	infoPartition->body.soundGroupInfo = malloc(sizeof(struct CTRSoundGroupInfo) * infoPartition->body.soundGroupInfoLinkTable.count);
-	addPointerToPointerList(infoPartition->body.soundGroupInfo, pointerList);
-	for (u32 i = 0; i < infoPartition->body.soundGroupInfoLinkTable.count; i += 1) {
-		fseek(soundArchiveFile, infoPartition->body.soundGroupInfoLinkTable.filePosition + infoPartition->body.soundGroupInfoLinkTable.table[i].offset, SEEK_SET);
-		if (readCTRSoundGroupInfo(&infoPartition->body.soundGroupInfo[i], soundArchiveFile, readBytes, pointerList) != STATUS_OK) {
-			fprintf(stderr, "Invalid sound group info.\n");
-			return STATUS_ERR;
-		}
-	}
+	INFO(1, soundGroupInfoLinkTable, soundGroupInfo, struct CTRSoundGroupInfo, readCTRSoundGroupInfo);
 
 	/* Bank info */
-	fseek(soundArchiveFile, infoPartition->body.filePosition + infoPartition->body.tableLinks[2].offset, SEEK_SET);
-	readLinkTable(&infoPartition->body.bankInfoLinkTable, soundArchiveFile, readBytes, pointerList);
-	infoPartition->body.bankInfo = malloc(sizeof(struct CTRBankInfo) * infoPartition->body.bankInfoLinkTable.count);
-	addPointerToPointerList(infoPartition->body.bankInfo, pointerList);
-	for (u32 i = 0; i < infoPartition->body.bankInfoLinkTable.count; i += 1) {
-		fseek(soundArchiveFile, infoPartition->body.bankInfoLinkTable.filePosition + infoPartition->body.bankInfoLinkTable.table[i].offset, SEEK_SET);
-		if (readCTRBankInfo(&infoPartition->body.bankInfo[i], soundArchiveFile, readBytes) != STATUS_OK) {
-			fprintf(stderr, "Invalid bank info.\n");
-			return STATUS_ERR;
-		}
-	}
+	INFO(2, bankInfoLinkTable, bankInfo, struct CTRBankInfo, readCTRBankInfo);
 
 	/* Wave archive info */
-	fseek(soundArchiveFile, infoPartition->body.filePosition + infoPartition->body.tableLinks[3].offset, SEEK_SET);
-	readLinkTable(&infoPartition->body.waveArchiveInfoLinkTable, soundArchiveFile, readBytes, pointerList);
-	infoPartition->body.waveArchiveInfo = malloc(sizeof(struct CTRWaveArchiveInfo) * infoPartition->body.waveArchiveInfoLinkTable.count);
-	addPointerToPointerList(infoPartition->body.waveArchiveInfo, pointerList);
-	for (u32 i = 0; i < infoPartition->body.waveArchiveInfoLinkTable.count; i += 1) {
-		fseek(soundArchiveFile, infoPartition->body.waveArchiveInfoLinkTable.filePosition + infoPartition->body.waveArchiveInfoLinkTable.table[i].offset, SEEK_SET);
-		if (readCTRWaveArchiveInfo(&infoPartition->body.waveArchiveInfo[i], soundArchiveFile, readBytes) != STATUS_OK) {
-			fprintf(stderr, "Invalid wave archive info.\n");
-			return STATUS_ERR;
-		}
-	}
+	INFO(3, waveArchiveInfoLinkTable, waveArchiveInfo, struct CTRWaveArchiveInfo, readCTRWaveArchiveInfo);
 
 	/* Group info */
-	fseek(soundArchiveFile, infoPartition->body.filePosition + infoPartition->body.tableLinks[4].offset, SEEK_SET);
-	readLinkTable(&infoPartition->body.groupInfoLinkTable, soundArchiveFile, readBytes, pointerList);
-	infoPartition->body.groupInfo = malloc(sizeof(struct CTRGroupInfo) * infoPartition->body.groupInfoLinkTable.count);
-	addPointerToPointerList(infoPartition->body.groupInfo, pointerList);
-	for (u32 i = 0; i < infoPartition->body.groupInfoLinkTable.count; i += 1) {
-		fseek(soundArchiveFile, infoPartition->body.groupInfoLinkTable.filePosition + infoPartition->body.groupInfoLinkTable.table[i].offset, SEEK_SET);
-		if (readCTRGroupInfo(&infoPartition->body.groupInfo[i], soundArchiveFile, readBytes) != STATUS_OK) {
-			fprintf(stderr, "Invalid group info.\n");
-			return STATUS_ERR;
-		}
-	}
+	INFO(4, groupInfoLinkTable, groupInfo, struct CTRGroupInfo, readCTRGroupInfo);
 
 	/* Player info */
-	fseek(soundArchiveFile, infoPartition->body.filePosition + infoPartition->body.tableLinks[5].offset, SEEK_SET);
-	readLinkTable(&infoPartition->body.playerInfoLinkTable, soundArchiveFile, readBytes, pointerList);
-	infoPartition->body.playerInfo = malloc(sizeof(struct CTRPlayerInfo) * infoPartition->body.playerInfoLinkTable.count);
-	addPointerToPointerList(infoPartition->body.playerInfo, pointerList);
-	for (u32 i = 0; i < infoPartition->body.playerInfoLinkTable.count; i += 1) {
-		fseek(soundArchiveFile, infoPartition->body.playerInfoLinkTable.filePosition + infoPartition->body.playerInfoLinkTable.table[i].offset, SEEK_SET);
-		if (readCTRPlayerInfo(&infoPartition->body.playerInfo[i], soundArchiveFile, readBytes) != STATUS_OK) {
-			fprintf(stderr, "Invalid player info.\n");
-			return STATUS_ERR;
-		}
-	}
+	INFO(5, playerInfoLinkTable, playerInfo, struct CTRPlayerInfo, readCTRPlayerInfo);
 
 	/* File info */
-	fseek(soundArchiveFile, infoPartition->body.filePosition + infoPartition->body.tableLinks[6].offset, SEEK_SET);
-	readLinkTable(&infoPartition->body.fileInfoLinkTable, soundArchiveFile, readBytes, pointerList);
-	infoPartition->body.fileInfo = malloc(sizeof(struct CTRFileInfo) * infoPartition->body.fileInfoLinkTable.count);
-	addPointerToPointerList(infoPartition->body.fileInfo, pointerList);
-	for (u32 i = 0; i < infoPartition->body.fileInfoLinkTable.count; i += 1) {
-		fseek(soundArchiveFile, infoPartition->body.fileInfoLinkTable.filePosition + infoPartition->body.fileInfoLinkTable.table[i].offset, SEEK_SET);
-		if (readCTRFileInfo(&infoPartition->body.fileInfo[i], soundArchiveFile, readBytes) != STATUS_OK) {
-			fprintf(stderr, "Invalid file info.\n");
-			return STATUS_ERR;
-		}
-	}
+	INFO(6, fileInfoLinkTable, fileInfo, struct CTRFileInfo, readCTRFileInfo);
 
+	/* Sound Archive Player Info */
 	fseek(soundArchiveFile, infoPartition->body.filePosition + infoPartition->body.tableLinks[7].offset, SEEK_SET);
 	if (readCTRSoundArchivePlayerInfo(&infoPartition->body.soundArchivePlayerInfo, soundArchiveFile, readBytes) != STATUS_OK) {
 		fprintf(stderr, "Invalid sound archive player info.\n");
@@ -854,7 +735,8 @@ readCTRSoundArchiveInfoPartition(struct CTRSoundArchiveInfoPartition *infoPartit
 }
 
 Status
-readCTRSoundArchiveFilePartition(struct CTRSoundArchiveFilePartition *filePartition, FILE *soundArchiveFile, u32 (*readBytes)(FILE *, u32)) {
+readCTRSoundArchiveFilePartition(struct CTRSoundArchiveFilePartition *filePartition, FILE *soundArchiveFile, u32 (*readBytes)(FILE *, u32))
+{
 	filePartition->filePosition = ftell(soundArchiveFile);
 	if (readPartitionHeader(&filePartition->partitionHeader, soundArchiveFile, "FILE", readBytes) != STATUS_OK) {
 		fprintf(stderr, "Invalid file partition header.\n");
