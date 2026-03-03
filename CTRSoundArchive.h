@@ -327,6 +327,8 @@ typedef struct {
 	struct CTRSoundArchiveFilePartition {
 		u32 filePosition;
 		struct PartitionHeader partitionHeader;
+
+		char **files;
 	} filePartition;
 
 } CTRSoundArchive;
@@ -410,7 +412,7 @@ Status
 readCTRSoundArchiveInfoPartition(struct CTRSoundArchiveInfoPartition *infoPartition, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRSoundArchiveFilePartition(struct CTRSoundArchiveFilePartition *filePartition, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
+readCTRSoundArchiveFilePartition(struct CTRSoundArchiveFilePartition *filePartition, FILE *soundArchiveFile, struct CTRSoundArchiveInfoPartition *infoPartition, u32 (*readBytes)(FILE *, u32), struct PointerList *pointerList);
 
 Status
 readCTRSoundArchive(CTRSoundArchive *soundArchive, FILE *soundArchiveFile);

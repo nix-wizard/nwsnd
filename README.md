@@ -11,6 +11,6 @@ Planned:
 
 Extraction, conversion, and sequence synthesis will be done in separate projects using this library once the above is done
 
-# DEPENDENCIES
+# Dependencies
 
 c library :\)
