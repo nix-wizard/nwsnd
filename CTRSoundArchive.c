@@ -566,6 +566,12 @@ readCTRBankInfo(struct CTRBankInfo *bankInfo, FILE *soundArchiveFile, u32 (*read
 	};
 	BITFLAG(bankInfo->optionParameter)
 
+	fseek(soundArchiveFile, bankInfo->filePosition + bankInfo->toWaveArchiveItemIDTable.offset, SEEK_SET);
+	if (readCTRItemIDTable(&bankInfo->waveArchiveItemIDTable, soundArchiveFile, readBytes, pointerList) != STATUS_OK) {
+		fprintf(stderr, "Invalid bank info item ID table.\n");
+		return STATUS_ERR;
+	}
+
 	return STATUS_OK;
 }
 
