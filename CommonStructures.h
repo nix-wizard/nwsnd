@@ -1,8 +1,6 @@
 /* See LICENSE file for copyright and license details. */
 #include <stdio.h>
 
-#define ALLOCATE(POINTER, SIZE) POINTER = malloc(SIZE); addPointerToPointerList(POINTER, pointerList);
-
 typedef unsigned char u8;
 typedef unsigned short int u16;
 typedef unsigned int u32;

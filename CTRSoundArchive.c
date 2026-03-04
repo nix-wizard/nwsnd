@@ -4,6 +4,8 @@
 
 #include "CTRSoundArchive.h"
 
+#define ALLOCATE(POINTER, SIZE) POINTER = malloc(SIZE); addPointerToPointerList(POINTER, pointerList);
+
 #define BITFLAG(OPTIONPARAMETER) \
 	u32 currentIndex; \
 	for (u32 i = 0; i < sizeof(optionParams)/sizeof(optionParams[0]); i += 1) { \
@@ -135,11 +137,23 @@ readCTRNodeTable(struct CTRNodeTable *nodeTable, FILE *soundArchiveFile, u32 (*r
 	nodeTable->filePosition = ftell(soundArchiveFile);
 	nodeTable->count = readBytes(soundArchiveFile, 4);
 
+	u32 leafCount = 0;
+
 	ALLOCATE(nodeTable->nodes, sizeof(struct CTRNode) * nodeTable->count)
-	for (u32 i = 0; i < nodeTable->count; i++) {
+	for (u32 i = 0; i < nodeTable->count; i += 1) {
 		if (readCTRNode(&nodeTable->nodes[i], soundArchiveFile, readBytes) != STATUS_OK) {
 			fprintf(stderr, "Invalid node in node table.");
 			return STATUS_ERR;
+		}
+		if ((nodeTable->nodes[i].flags & 1) == 1) { /* Is a leaf */
+			leafCount += 1;
+		}
+	}
+
+	ALLOCATE(nodeTable->itemIDToNode, sizeof(struct CTRNode *) * leafCount)
+	for (u32 i = 0; i < nodeTable->count; i += 1) {
+		if ((nodeTable->nodes[i].flags & 1) == 1) {
+			nodeTable->itemIDToNode[nodeTable->nodes[i].itemID.ID] = &nodeTable->nodes[i]; /* TODO: Warn for duplicates */
 		}
 	}
 

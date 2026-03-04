@@ -67,6 +67,8 @@ typedef struct {
 						u32 stringID;
 						struct CTRItemID itemID;
 					} *nodes;
+					
+					struct CTRNode **itemIDToNode;
 				} nodeTable;
 			} patriciaTree;
 		} body;

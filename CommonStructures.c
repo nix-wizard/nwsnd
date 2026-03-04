@@ -4,6 +4,8 @@
 
 #include "CommonStructures.h"
 
+#define ALLOCATE(POINTER, SIZE) POINTER = malloc(SIZE); addPointerToPointerList(POINTER, pointerList);
+
 u32
 readLittleEndian(FILE *file, u32 bytes)
 {
