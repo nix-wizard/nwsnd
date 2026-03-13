@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "CTRSoundArchive.h"
+#include "nwsoundlib/ctr/ctr_soundarchive.h"
 
 #define ALLOCATE(POINTER, SIZE) POINTER = malloc(SIZE); addPointerToPointerList(POINTER, pointerList);
 
@@ -324,7 +324,7 @@ readCTRStreamSoundInfo(struct CTRStreamSoundInfo *streamSoundInfo, FILE *soundAr
 		}
 	}
 
-	if (streamSoundInfo->toStreamSoundExtension.referenceID == REFID_SOUNDARCHIVEFILE_STREAMSOUNDEXTENSIONINFO && streamSoundInfo->toStreamSoundExtension.offset != 0xffffffff) {
+	if (streamSoundInfo->toStreamSoundExtension.referenceID == REFID_SOUNDARCHIVEFILE_STREAMSOUNDEXTENSIONINFO && streamSoundInfo->toStreamSoundExtension.offset != (s32) 0xffffffff) {
 		fseek(soundArchiveFile, streamSoundInfo->filePosition + streamSoundInfo->toStreamSoundExtension.offset, SEEK_SET);
 		if (readCTRStreamSoundExtension(&streamSoundInfo->streamSoundExtension, soundArchiveFile, readBytes) != STATUS_OK) {
 			fprintf(stderr, "Invalid stream sound extension in stream sound info.\n");

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "CommonStructures.h"
+#include "nwsoundlib/common.h"
 
 #define ALLOCATE(POINTER, SIZE) POINTER = malloc(SIZE); addPointerToPointerList(POINTER, pointerList);
 
@@ -11,7 +11,7 @@ readLittleEndian(FILE *file, u32 bytes)
 {
 	u32 value = 0;
 	u32 bits = bytes * 8;
-	for (s32 i = 0; i < bits; i += 8) {
+	for (u32 i = 0; i < bits; i += 8) {
 		value |= fgetc(file) << i;
 	}
 	return value;
@@ -208,7 +208,6 @@ getBitFlagParameterIndex(u32 bitFlag, u32 bitNumber)
 		return STATUS_ERR;
 	}
 
-	u8 valid = 0;
 	u32 count = 0;
 	for (u32 i = 0; i <= bitNumber; i++) {
 		if (bitFlag & (0x1 << i)) {
