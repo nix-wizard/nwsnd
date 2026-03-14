@@ -1,5 +1,5 @@
 CC = cc
-CFLAGS = -std=c99 -Wall -Wextra -O2 -Iinclude
+CFLAGS = -x c -std=c99 -Wall -Wextra -O2 -Iinclude
 AR = ar
 ARFLAGS = rcs
 
