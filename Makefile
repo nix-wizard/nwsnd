@@ -3,7 +3,7 @@ CFLAGS = -std=c99 -Wall -Wextra -O2 -Iinclude
 AR = ar
 ARFLAGS = rcs
 
-LIB = nwsoundlib.a
+LIB = libnwsnd.a
 
 SRC = src/common.c src/ctr/ctr_soundarchive.c
 OBJ = $(SRC:src/%.c=build/%.o)

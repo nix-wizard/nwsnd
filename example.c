@@ -1,5 +1,5 @@
 /* See LICENSE file for copyright and license details. */
-#include "nwsoundlib/ctr/ctr_soundarchive.h"
+#include "libnwsnd/ctr/ctr_soundarchive.h"
 
 int
 main(int argc, char **argv)

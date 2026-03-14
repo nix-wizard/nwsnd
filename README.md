@@ -1,4 +1,4 @@
-# nwsoundlib
+# libnwsnd
 
 C library to read NintendoWare sound formats.
 

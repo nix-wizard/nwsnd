@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "nwsoundlib/ctr/ctr_soundarchive.h"
+#include "libnwsnd/ctr/ctr_soundarchive.h"
 
 #define ALLOCATE(POINTER, SIZE) POINTER = malloc(SIZE); addPointerToPointerList(POINTER, pointerList);
 
