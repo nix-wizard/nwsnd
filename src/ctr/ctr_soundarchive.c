@@ -51,8 +51,8 @@ readCTRSendValue(struct CTRSendValue *sendValue, FILE *soundArchiveFile, u32 (*r
 {
 	sendValue->filePosition = ftell(soundArchiveFile);
 	sendValue->mainSend = readBytes(soundArchiveFile, 1);
+	sendValue->fxSend[0] = readBytes(soundArchiveFile, 1);
 	sendValue->fxSend[1] = readBytes(soundArchiveFile, 1);
-	sendValue->fxSend[2] = readBytes(soundArchiveFile, 1);
 	fseek(soundArchiveFile, 1, SEEK_CUR);
 
 	return STATUS_OK;
@@ -184,7 +184,7 @@ readCTRStreamTrackInfo(struct CTRStreamTrackInfo *streamTrackInfo, FILE *soundAr
 	readLink(&streamTrackInfo->toGlobalChannelIndexTable, soundArchiveFile, readBytes);
 	readLink(&streamTrackInfo->toSendValue, soundArchiveFile, readBytes);
 	streamTrackInfo->lpfFreq = readBytes(soundArchiveFile, 1);
-	streamTrackInfo->biquadValue = readBytes(soundArchiveFile, 1);
+	streamTrackInfo->biquadType = readBytes(soundArchiveFile, 1);
 	streamTrackInfo->biquadValue = readBytes(soundArchiveFile, 1);
 
 	fseek(soundArchiveFile, streamTrackInfo->filePosition + streamTrackInfo->toGlobalChannelIndexTable.offset, SEEK_SET);
