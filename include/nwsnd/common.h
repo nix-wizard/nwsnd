@@ -1,6 +1,14 @@
 /* See LICENSE file for copyright and license details. */
 #include <stdio.h>
 
+#define ALLOCATE(POINTER, SIZE) POINTER = malloc(SIZE); addPointerToPointerList(POINTER, pointerList);
+
+#define CATCH(STATEMENT, DATA, LOCATION) \
+	if (STATEMENT) { \
+		fprintf(stderr, "ERR: Invalid %s in %s.\n", DATA, LOCATION); \
+		return STATUS_ERR; \
+	}
+
 typedef unsigned char u8;
 typedef unsigned short int u16;
 typedef unsigned int u32;
@@ -281,12 +289,6 @@ readLinkTable(struct LinkTable *linkTable, FILE *file, u32 (*readBytes)(FILE *fi
 
 Status
 readLinkWithLengthTable(struct LinkWithLengthTable *linkTable, FILE *file, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
-
-Status
-getLinkByReferenceID(u32 *out, u32 linkCount, struct Link links[linkCount], ReferenceID referenceID);
-
-Status
-getLinkWithLengthByReferenceID(u32 *out, u32 linkCount, struct LinkWithLength links[linkCount], ReferenceID referenceID);
 
 u32
 getBitFlagParameterIndex(u32 bitFlag, u32 bitNumber);

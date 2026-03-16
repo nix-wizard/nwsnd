@@ -28,13 +28,7 @@ typedef struct {
 	struct CTRSoundArchiveHeader{
 		u32 filePosition;
 		struct FileHeader fileHeader;
-		struct LinkWithLength *partitionLinks;
-		u32 stringOffset;
-		u32 stringLength;
-		u32 infoOffset;
-		u32 infoLength;
-		u32 fileOffset;
-		u32 fileLength;
+		struct LinkWithLength partitionLinks[3];
 	} header;
 
 	struct CTRSoundArchiveStringPartition {
@@ -351,7 +345,7 @@ Status
 readCTRSendValue(struct CTRSendValue *sendValue, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
 
 Status
-readCTRSoundArchiveHeader(struct CTRSoundArchiveHeader *header, FILE *soundArchiveFile, u32 (**readBytesPointer)(FILE *, u32), struct PointerList *pointerList);
+readCTRSoundArchiveHeader(struct CTRSoundArchiveHeader *header, FILE *soundArchiveFile, u32 (**readBytesPointer)(FILE *, u32));
 
 Status
 readCTRNode(struct CTRNode *node, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes)) ;

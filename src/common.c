@@ -47,7 +47,7 @@ setEndianess(u16 byteOrder, u32 (**readBytesPointer)(FILE *, u32))
 		*readBytesPointer = readBigEndian;
 	}
 	else {
-		fprintf(stderr, "Invalid byte order marker.\n");
+		fprintf(stderr, "ERR: Invalid byte order marker.\n");
 		return STATUS_ERR;
 	}
 
@@ -83,15 +83,11 @@ readFileHeader(struct FileHeader *fileHeader, FILE *file, char fileType[4], u32 
 	fileHeader->filePosition = ftell(file);
 	fread(fileHeader->fileType, 1, 4, file);
 	fileHeader->fileType[4] = '\0';
-	if (strncmp(fileHeader->fileType, fileType, 4) != 0) {
-		fprintf(stderr, "File type mismatch in header. Likely invalid file.\n");
-		return STATUS_ERR;
-	}
+	CATCH(strncmp(fileHeader->fileType, fileType, 4) != 0, "file type", "file header")
+	
 	fileHeader->byteOrder = readBigEndian(file, 2);
-	if (setEndianess(fileHeader->byteOrder, readBytesPointer) != STATUS_OK) {
-		fprintf(stderr, "Invalid byte order marker.\n");
-		return STATUS_ERR;
-	}
+	CATCH(setEndianess(fileHeader->byteOrder, readBytesPointer) != STATUS_OK, "endianess", "file header")
+
 	u32 (*readBytes)(FILE *file, u32 bytes) = (*readBytesPointer);
 	fileHeader->headerLength = readBytes(file, 2);
 	fileHeader->fileVersion = readBytes(file, 4);
@@ -108,10 +104,8 @@ readPartitionHeader(struct PartitionHeader *partitionHeader, FILE *file, char pa
 	partitionHeader->filePosition = ftell(file);
 	fread(partitionHeader->partitionType, 1, 4, file);
 	partitionHeader->partitionType[4] = '\0';
-	if (strncmp(partitionHeader->partitionType, partitionType, 4) != 0) {
-		fprintf(stderr, "Partition header type mismatch.\n");
-		return STATUS_ERR;
-	}
+	CATCH(strncmp(partitionHeader->partitionType, partitionType, 4) != 0, "type", "partition header")
+
 	partitionHeader->length = readBytes(file, 2);
 	fseek(file, 2, SEEK_CUR);
 
@@ -147,10 +141,7 @@ readLinkTable(struct LinkTable *linkTable, FILE *file, u32 (*readBytes)(FILE *fi
 	linkTable->count = readBytes(file, 4);
 	ALLOCATE(linkTable->table, sizeof(struct Link) * linkTable->count)
 	for (u32 i = 0; i < linkTable->count; i += 1) {
-		if (readLink(&linkTable->table[i], file, readBytes) != STATUS_OK) {
-			fprintf(stderr, "Invalid link in link table.\n");
-			return STATUS_ERR;
-		}
+		CATCH(readLink(&linkTable->table[i], file, readBytes) != STATUS_OK, "link", "link table")
 	}
 
 	return STATUS_OK;
@@ -163,51 +154,16 @@ readLinkWithLengthTable(struct LinkWithLengthTable *linkTable, FILE *file, u32 (
 	linkTable->count = readBytes(file, 4);
 	ALLOCATE(linkTable->table, sizeof(struct LinkWithLength) * linkTable->count)
 	for (u32 i = 0; i < linkTable->count; i += 1) {
-		if (readLinkWithLength(&linkTable->table[i], file, readBytes) != STATUS_OK) {
-			fprintf(stderr, "Invalid link in link with length table.\n");
-			return STATUS_ERR;
-		}
+		CATCH(readLinkWithLength(&linkTable->table[i], file, readBytes) != STATUS_OK, "link", "link with length table")
 		linkTable->size += linkTable->table[i].length;
 	}
 
 	return STATUS_OK;
 }
 
-Status
-getLinkByReferenceID(u32 *out, u32 linkCount, struct Link links[linkCount], ReferenceID referenceID)
-{
-	for (u32 i = 0; i < linkCount; i++) {
-		if (links[i].referenceID == referenceID) {
-			*out = i;
-			return STATUS_OK;
-		}
-	}
-	
-	fprintf(stderr, "Failed to find a link of that type.\n");
-	return STATUS_ERR;
-}
-
-Status
-getLinkWithLengthByReferenceID(u32 *out, u32 linkCount, struct LinkWithLength links[linkCount], ReferenceID referenceID)
-{
-	for (u32 i = 0; i < linkCount; i++) {
-		if (links[i].referenceID == referenceID) {
-			*out = i;
-			return STATUS_OK;
-		}
-	}
-
-	fprintf(stderr, "Failed to find a link of that type.\n");
-	return STATUS_ERR;
-}
-
 u32
 getBitFlagParameterIndex(u32 bitFlag, u32 bitNumber)
 {
-	if (bitNumber > 31) {
-		return STATUS_ERR;
-	}
-
 	u32 count = 0;
 	for (u32 i = 0; i <= bitNumber; i++) {
 		if (bitFlag & (0x1 << i)) {
