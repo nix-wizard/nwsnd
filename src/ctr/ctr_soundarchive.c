@@ -24,7 +24,7 @@
 	}
 
 Status
-readCTRItemID(struct CTRItemID *itemID, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
+readCTR_SoundArchive_ItemID(struct CTR_SoundArchive_ItemID *itemID, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
 {
 	itemID->filePosition = ftell(soundArchiveFile);
 	itemID->ID = readBytes(soundArchiveFile, 3);
@@ -34,20 +34,20 @@ readCTRItemID(struct CTRItemID *itemID, FILE *soundArchiveFile, u32 (*readBytes)
 };
 
 Status
-readCTRItemIDTable(struct CTRItemIDTable *itemIDTable, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
+readCTR_SoundArchive_ItemIDTable(struct CTR_SoundArchive_ItemIDTable *itemIDTable, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	itemIDTable->filePosition = ftell(soundArchiveFile);
 	itemIDTable->count = readBytes(soundArchiveFile, 4);
-	ALLOCATE(itemIDTable->table, sizeof(struct CTRItemID) * itemIDTable->count)
+	ALLOCATE(itemIDTable->table, sizeof(struct CTR_SoundArchive_ItemID) * itemIDTable->count)
 	for (u32 i = 0; i < itemIDTable->count; i += 1) {
-		CATCH(readCTRItemID(&itemIDTable->table[i], soundArchiveFile, readBytes) != STATUS_OK, "item ID", "item ID table")
+		CATCH(readCTR_SoundArchive_ItemID(&itemIDTable->table[i], soundArchiveFile, readBytes) != STATUS_OK, "item ID", "item ID table")
 	}
 
 	return STATUS_OK;
 };
 
 Status
-readCTRSendValue(struct CTRSendValue *sendValue, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
+readCTR_SoundArchive_SendValue(struct CTR_SoundArchive_SendValue *sendValue, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
 {
 	sendValue->filePosition = ftell(soundArchiveFile);
 	sendValue->mainSend = readBytes(soundArchiveFile, 1);
@@ -59,7 +59,7 @@ readCTRSendValue(struct CTRSendValue *sendValue, FILE *soundArchiveFile, u32 (*r
 }
 
 Status
-readCTRSoundArchiveHeader(struct CTRSoundArchiveHeader *header, FILE *soundArchiveFile, u32 (**readBytesPointer)(FILE *, u32))
+readCTR_SoundArchive_FileHeader(struct CTR_SoundArchive_FileHeader *header, FILE *soundArchiveFile, u32 (**readBytesPointer)(FILE *, u32))
 {
 	header->filePosition = ftell(soundArchiveFile);
 	CATCH(readFileHeader(&header->fileHeader, soundArchiveFile, "CSAR", readBytesPointer) != STATUS_OK, "file header", "file")
@@ -74,7 +74,7 @@ readCTRSoundArchiveHeader(struct CTRSoundArchiveHeader *header, FILE *soundArchi
 }
 
 Status
-readCTRNode(struct CTRNode *node, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
+readCTR_SoundArchive_Node(struct CTR_SoundArchive_Node *node, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
 {
 	node->filePosition = ftell(soundArchiveFile);
 	node->flags = readBytes(soundArchiveFile, 2);
@@ -82,28 +82,28 @@ readCTRNode(struct CTRNode *node, FILE *soundArchiveFile, u32 (*readBytes)(FILE 
 	node->leftIndex = readBytes(soundArchiveFile, 4);
 	node->rightIndex = readBytes(soundArchiveFile, 4);
 	node->stringID = readBytes(soundArchiveFile, 4);
-	CATCH(readCTRItemID(&node->itemID, soundArchiveFile, readBytes) != STATUS_OK, "item ID", "node table")
+	CATCH(readCTR_SoundArchive_ItemID(&node->itemID, soundArchiveFile, readBytes) != STATUS_OK, "item ID", "node table")
 
 	return STATUS_OK;
 }
 
 Status
-readCTRNodeTable(struct CTRNodeTable *nodeTable, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
+readCTR_SoundArchive_NodeTable(struct CTR_SoundArchive_NodeTable *nodeTable, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	nodeTable->filePosition = ftell(soundArchiveFile);
 	nodeTable->count = readBytes(soundArchiveFile, 4);
 
 	u32 leafCount = 0;
 
-	ALLOCATE(nodeTable->nodes, sizeof(struct CTRNode) * nodeTable->count)
+	ALLOCATE(nodeTable->nodes, sizeof(struct CTR_SoundArchive_Node) * nodeTable->count)
 	for (u32 i = 0; i < nodeTable->count; i += 1) {
-		CATCH(readCTRNode(&nodeTable->nodes[i], soundArchiveFile, readBytes) != STATUS_OK, "node", "node table")
+		CATCH(readCTR_SoundArchive_Node(&nodeTable->nodes[i], soundArchiveFile, readBytes) != STATUS_OK, "node", "node table")
 		if ((nodeTable->nodes[i].flags & 1) == 1) { /* Is a leaf */
 			leafCount += 1;
 		}
 	}
 
-	ALLOCATE(nodeTable->itemIDToNode, sizeof(struct CTRNode *) * leafCount)
+	ALLOCATE(nodeTable->itemIDToNode, sizeof(struct CTR_SoundArchive_Node *) * leafCount)
 	for (u32 i = 0; i < nodeTable->count; i += 1) {
 		if ((nodeTable->nodes[i].flags & 1) == 1) {
 			nodeTable->itemIDToNode[nodeTable->nodes[i].itemID.ID] = &nodeTable->nodes[i]; /* TODO: Warn for duplicates */
@@ -114,17 +114,17 @@ readCTRNodeTable(struct CTRNodeTable *nodeTable, FILE *soundArchiveFile, u32 (*r
 }
 
 Status
-readCTRPatriciaTree(struct CTRPatriciaTree *patriciaTree, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
+readCTR_SoundArchive_PatriciaTree(struct CTR_SoundArchive_PatriciaTree *patriciaTree, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	patriciaTree->filePosition = ftell(soundArchiveFile);
 	patriciaTree->rootIndex = readBytes(soundArchiveFile, 4);
-	CATCH(readCTRNodeTable(&patriciaTree->nodeTable, soundArchiveFile, readBytes, pointerList) != STATUS_OK, "node table", "patricia tree")
+	CATCH(readCTR_SoundArchive_NodeTable(&patriciaTree->nodeTable, soundArchiveFile, readBytes, pointerList) != STATUS_OK, "node table", "patricia tree")
 
 	return STATUS_OK;
 }
 
 Status
-readCTRSoundArchiveStringPartition(struct CTRSoundArchiveStringPartition *stringPartition, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
+readCTR_SoundArchive_StringPartition(struct CTR_SoundArchive_StringPartition *stringPartition, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	/* Header */
 	stringPartition->header.filePosition = ftell(soundArchiveFile);
@@ -154,13 +154,13 @@ readCTRSoundArchiveStringPartition(struct CTRSoundArchiveStringPartition *string
 
 	/* Patricia Tree */
 	fseek(soundArchiveFile, stringPartition->body.patriciaTreeOffset, SEEK_SET);
-	CATCH(readCTRPatriciaTree(&stringPartition->body.patriciaTree, soundArchiveFile, readBytes, pointerList) != STATUS_OK, "patricia tree", "string partition")
+	CATCH(readCTR_SoundArchive_PatriciaTree(&stringPartition->body.patriciaTree, soundArchiveFile, readBytes, pointerList) != STATUS_OK, "patricia tree", "string partition")
 
 	return STATUS_OK;
 }
 
 Status
-readCTRSound3DInfo(struct CTRSound3DInfo *sound3DInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
+readCTR_SoundArchive_Sound3DInfo(struct CTR_SoundArchive_Sound3DInfo *sound3DInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
 {
 	sound3DInfo->filePosition = ftell(soundArchiveFile);
 	sound3DInfo->flags = readBytes(soundArchiveFile, 4);
@@ -174,7 +174,7 @@ readCTRSound3DInfo(struct CTRSound3DInfo *sound3DInfo, FILE *soundArchiveFile, u
 }
 
 Status
-readCTRStreamTrackInfo(struct CTRStreamTrackInfo *streamTrackInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
+readCTR_SoundArchive_StreamTrackInfo(struct CTR_SoundArchive_StreamTrackInfo *streamTrackInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	streamTrackInfo->filePosition = ftell(soundArchiveFile);
 	streamTrackInfo->volume = readBytes(soundArchiveFile, 1);
@@ -192,14 +192,14 @@ readCTRStreamTrackInfo(struct CTRStreamTrackInfo *streamTrackInfo, FILE *soundAr
 
 	if (streamTrackInfo->toSendValue.referenceID == REFID_SOUNDARCHIVEFILE_SENDINFO) {
 		fseek(soundArchiveFile, streamTrackInfo->filePosition + streamTrackInfo->toSendValue.offset, SEEK_SET);
-		CATCH(readCTRSendValue(&streamTrackInfo->sendValue, soundArchiveFile, readBytes) != STATUS_OK, "send value", "stream track info")
+		CATCH(readCTR_SoundArchive_SendValue(&streamTrackInfo->sendValue, soundArchiveFile, readBytes) != STATUS_OK, "send value", "stream track info")
 	}
 	
 	return STATUS_OK;
 }
 
 Status
-readCTRStreamSoundExtension(struct CTRStreamSoundExtension *streamSoundExtension, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
+readCTR_SoundArchive_StreamSoundExtension(struct CTR_SoundArchive_StreamSoundExtension *streamSoundExtension, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
 {
 	streamSoundExtension->filePosition = ftell(soundArchiveFile);
 	streamSoundExtension->streamTypeInfo = readBytes(soundArchiveFile, 4);
@@ -213,7 +213,7 @@ readCTRStreamSoundExtension(struct CTRStreamSoundExtension *streamSoundExtension
 }
 
 Status
-readCTRStreamSoundInfo(struct CTRStreamSoundInfo *streamSoundInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
+readCTR_SoundArchive_StreamSoundInfo(struct CTR_SoundArchive_StreamSoundInfo *streamSoundInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	streamSoundInfo->filePosition = ftell(soundArchiveFile);
 	streamSoundInfo->allocateTrackFlags = readBytes(soundArchiveFile, 2);
@@ -228,29 +228,29 @@ readCTRStreamSoundInfo(struct CTRStreamSoundInfo *streamSoundInfo, FILE *soundAr
 	if (streamSoundInfo->toStreamTrackInfoLinkTable.referenceID == REFID_STREAMSOUNDFILE_TRACKINFO) {
 		fseek(soundArchiveFile, streamSoundInfo->filePosition + streamSoundInfo->toStreamTrackInfoLinkTable.offset, SEEK_SET);
 		CATCH(readLinkTable(&streamSoundInfo->streamTrackInfoLinkTable, soundArchiveFile, readBytes, pointerList) != STATUS_OK, "stream track info link table", "stream sound info")
-		ALLOCATE(streamSoundInfo->streamTrackInfo, sizeof(struct CTRStreamTrackInfo) * streamSoundInfo->streamTrackInfoLinkTable.count)
+		ALLOCATE(streamSoundInfo->streamTrackInfo, sizeof(struct CTR_SoundArchive_StreamTrackInfo) * streamSoundInfo->streamTrackInfoLinkTable.count)
 		for (u32 i = 0; i < streamSoundInfo->streamTrackInfoLinkTable.count; i += 1) {
 			fseek(soundArchiveFile, streamSoundInfo->streamTrackInfoLinkTable.filePosition + streamSoundInfo->streamTrackInfoLinkTable.table[i].offset, SEEK_SET);
-			CATCH(readCTRStreamTrackInfo(&streamSoundInfo->streamTrackInfo[i], soundArchiveFile, readBytes, pointerList) != STATUS_OK, "stream track info", "stream sound info")
+			CATCH(readCTR_SoundArchive_StreamTrackInfo(&streamSoundInfo->streamTrackInfo[i], soundArchiveFile, readBytes, pointerList) != STATUS_OK, "stream track info", "stream sound info")
 		}
 	}
 
 	/* Send value */
 	if (streamSoundInfo->toSendValue.referenceID == REFID_SOUNDARCHIVEFILE_SENDINFO) {
 		fseek(soundArchiveFile, streamSoundInfo->filePosition + streamSoundInfo->toSendValue.offset, SEEK_SET);
-		CATCH(readCTRSendValue(&streamSoundInfo->sendValue, soundArchiveFile, readBytes) != STATUS_OK, "send value", "stream sound info")
+		CATCH(readCTR_SoundArchive_SendValue(&streamSoundInfo->sendValue, soundArchiveFile, readBytes) != STATUS_OK, "send value", "stream sound info")
 	}
 
 	if (streamSoundInfo->toStreamSoundExtension.referenceID == REFID_SOUNDARCHIVEFILE_STREAMSOUNDEXTENSIONINFO && streamSoundInfo->toStreamSoundExtension.offset != (s32) 0xffffffff) {
 		fseek(soundArchiveFile, streamSoundInfo->filePosition + streamSoundInfo->toStreamSoundExtension.offset, SEEK_SET);
-		CATCH(readCTRStreamSoundExtension(&streamSoundInfo->streamSoundExtension, soundArchiveFile, readBytes) != STATUS_OK, "stream sound extension", "stream sound info")
+		CATCH(readCTR_SoundArchive_StreamSoundExtension(&streamSoundInfo->streamSoundExtension, soundArchiveFile, readBytes) != STATUS_OK, "stream sound extension", "stream sound info")
 	}
 
 	return STATUS_OK;
 }
 
 Status
-readCTRWaveSoundInfo(struct CTRWaveSoundInfo *waveSoundInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
+readCTR_SoundArchive_WaveSoundInfo(struct CTR_SoundArchive_WaveSoundInfo *waveSoundInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
 {
 	waveSoundInfo->filePosition = ftell(soundArchiveFile);
 	waveSoundInfo->index = readBytes(soundArchiveFile, 4);
@@ -271,7 +271,7 @@ readCTRWaveSoundInfo(struct CTRWaveSoundInfo *waveSoundInfo, FILE *soundArchiveF
 }
 
 Status
-readCTRSequenceSoundInfo(struct CTRSequenceSoundInfo *sequenceSoundInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
+readCTR_SoundArchive_SequenceSoundInfo(struct CTR_SoundArchive_SequenceSoundInfo *sequenceSoundInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	sequenceSoundInfo->filePosition = ftell(soundArchiveFile);
 	CATCH(readLink(&sequenceSoundInfo->toBankIDTable, soundArchiveFile, readBytes) != STATUS_OK, "bank ID table link", "sequence sound info")
@@ -296,11 +296,11 @@ readCTRSequenceSoundInfo(struct CTRSequenceSoundInfo *sequenceSoundInfo, FILE *s
 }
 
 Status
-readCTRSoundInfo(struct CTRSoundInfo *soundInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
+readCTR_SoundArchive_SoundInfo(struct CTR_SoundArchive_SoundInfo *soundInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	soundInfo->filePosition = ftell(soundArchiveFile);
 	soundInfo->fileID = readBytes(soundArchiveFile, 4);
-	readCTRItemID(&soundInfo->playerID, soundArchiveFile, readBytes);
+	readCTR_SoundArchive_ItemID(&soundInfo->playerID, soundArchiveFile, readBytes);
 	soundInfo->volume = readBytes(soundArchiveFile, 1);
 	fseek(soundArchiveFile, 3, SEEK_CUR);
 	CATCH(readLink(&soundInfo->extraInfoLink, soundArchiveFile, readBytes) != STATUS_OK, "extra info link", "sound info")
@@ -341,22 +341,22 @@ readCTRSoundInfo(struct CTRSoundInfo *soundInfo, FILE *soundArchiveFile, u32 (*r
 	/* 3D sound info */
 	if (getBitFlagParameterIndex(soundInfo->optionParameter.bitFlag, 0x08) != FALSE) {
 		fseek(soundArchiveFile, soundInfo->filePosition + soundInfo->offsetTo3DParam, SEEK_SET);
-		CATCH(readCTRSound3DInfo(&soundInfo->sound3DInfo, soundArchiveFile, readBytes) != STATUS_OK, "3D sound info", "sound info")
+		CATCH(readCTR_SoundArchive_Sound3DInfo(&soundInfo->sound3DInfo, soundArchiveFile, readBytes) != STATUS_OK, "3D sound info", "sound info")
 	}
 
 	/* Extra info */
 	switch (soundInfo->extraInfoLink.referenceID) {
 	case REFID_SOUNDARCHIVEFILE_STREAMSOUNDINFO:
 		fseek(soundArchiveFile, soundInfo->filePosition + soundInfo->extraInfoLink.offset, SEEK_SET);
-		CATCH(readCTRStreamSoundInfo(&soundInfo->streamSoundInfo, soundArchiveFile, readBytes, pointerList) != STATUS_OK, "stream sound extra info", "sound info")
+		CATCH(readCTR_SoundArchive_StreamSoundInfo(&soundInfo->streamSoundInfo, soundArchiveFile, readBytes, pointerList) != STATUS_OK, "stream sound extra info", "sound info")
 		break;
 	case REFID_SOUNDARCHIVEFILE_WAVESOUNDINFO:
 		fseek(soundArchiveFile, soundInfo->filePosition + soundInfo->extraInfoLink.offset, SEEK_SET);
-		CATCH(readCTRWaveSoundInfo(&soundInfo->waveSoundInfo, soundArchiveFile, readBytes) != STATUS_OK, "wave sound extra info", "sound info")
+		CATCH(readCTR_SoundArchive_WaveSoundInfo(&soundInfo->waveSoundInfo, soundArchiveFile, readBytes) != STATUS_OK, "wave sound extra info", "sound info")
 		break;
 	case REFID_SOUNDARCHIVEFILE_SEQUENCESOUNDINFO:
 		fseek(soundArchiveFile, soundInfo->filePosition + soundInfo->extraInfoLink.offset, SEEK_SET);
-		CATCH(readCTRSequenceSoundInfo(&soundInfo->sequenceSoundInfo, soundArchiveFile, readBytes, pointerList) != STATUS_OK, "sequence extra info", "sound info")
+		CATCH(readCTR_SoundArchive_SequenceSoundInfo(&soundInfo->sequenceSoundInfo, soundArchiveFile, readBytes, pointerList) != STATUS_OK, "sequence extra info", "sound info")
 		break;
 	default:
 		break;
@@ -366,7 +366,7 @@ readCTRSoundInfo(struct CTRSoundInfo *soundInfo, FILE *soundArchiveFile, u32 (*r
 }
 
 Status
-readCTRWaveSoundGroupInfo(struct CTRWaveSoundGroupInfo *waveSoundGroupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
+readCTR_SoundArchive_WaveSoundGroupInfo(struct CTR_SoundArchive_WaveSoundGroupInfo *waveSoundGroupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	waveSoundGroupInfo->filePosition = ftell(soundArchiveFile);
 	CATCH(readLink(&waveSoundGroupInfo->toWaveArchiveItemIDTable, soundArchiveFile, readBytes) != STATUS_OK, "item ID table link", "wave sound group info")
@@ -374,17 +374,17 @@ readCTRWaveSoundGroupInfo(struct CTRWaveSoundGroupInfo *waveSoundGroupInfo, FILE
 
 	/* Wave archive item ID table */
 	fseek(soundArchiveFile, waveSoundGroupInfo->filePosition + waveSoundGroupInfo->toWaveArchiveItemIDTable.offset, SEEK_SET);
-	CATCH(readCTRItemIDTable(&waveSoundGroupInfo->waveArchiveIDTable, soundArchiveFile, readBytes, pointerList) != STATUS_OK, "wave archive ID table", "wave sound group info")
+	CATCH(readCTR_SoundArchive_ItemIDTable(&waveSoundGroupInfo->waveArchiveIDTable, soundArchiveFile, readBytes, pointerList) != STATUS_OK, "wave archive ID table", "wave sound group info")
 
 	return STATUS_OK;
 }
 
 Status
-readCTRSoundGroupInfo(struct CTRSoundGroupInfo *soundGroupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
+readCTR_SoundArchive_SoundGroupInfo(struct CTR_SoundArchive_SoundGroupInfo *soundGroupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	soundGroupInfo->filePosition = ftell(soundArchiveFile);
-	CATCH(readCTRItemID(&soundGroupInfo->startID, soundArchiveFile, readBytes) != STATUS_OK, "start ID", "sound group info")
-	CATCH(readCTRItemID(&soundGroupInfo->endID, soundArchiveFile, readBytes) != STATUS_OK, "end ID", "sound group info")
+	CATCH(readCTR_SoundArchive_ItemID(&soundGroupInfo->startID, soundArchiveFile, readBytes) != STATUS_OK, "start ID", "sound group info")
+	CATCH(readCTR_SoundArchive_ItemID(&soundGroupInfo->endID, soundArchiveFile, readBytes) != STATUS_OK, "end ID", "sound group info")
 	CATCH(readLink(&soundGroupInfo->toFileIdTable, soundArchiveFile, readBytes) != STATUS_OK, "file ID table link", "sound group info")
 	CATCH(readLink(&soundGroupInfo->toWaveSoundGroupInfo, soundArchiveFile, readBytes) != STATUS_OK, "wave sound group info link", "sound group info")
 	CATCH(readOptionParameter(&soundGroupInfo->optionParameter, soundArchiveFile, readBytes) != STATUS_OK, "option parameter", "sound group info")
@@ -402,14 +402,14 @@ readCTRSoundGroupInfo(struct CTRSoundGroupInfo *soundGroupInfo, FILE *soundArchi
 	/* Wave sound group info */
 	if (soundGroupInfo->toWaveSoundGroupInfo.referenceID == REFID_SOUNDARCHIVEFILE_WAVESOUNDGROUPINFO) {
 		fseek(soundArchiveFile, soundGroupInfo->filePosition + soundGroupInfo->toWaveSoundGroupInfo.offset, SEEK_SET);
-		CATCH(readCTRWaveSoundGroupInfo(&soundGroupInfo->waveSoundGroupInfo, soundArchiveFile, readBytes, pointerList) != STATUS_OK, "wave sound group info", "sound group info")
+		CATCH(readCTR_SoundArchive_WaveSoundGroupInfo(&soundGroupInfo->waveSoundGroupInfo, soundArchiveFile, readBytes, pointerList) != STATUS_OK, "wave sound group info", "sound group info")
 	}
 
 	return STATUS_OK;
 }
 
 Status
-readCTRBankInfo(struct CTRBankInfo *bankInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
+readCTR_SoundArchive_BankInfo(struct CTR_SoundArchive_BankInfo *bankInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	bankInfo->filePosition = ftell(soundArchiveFile);
 	bankInfo->fileID = readBytes(soundArchiveFile, 4);
@@ -422,13 +422,13 @@ readCTRBankInfo(struct CTRBankInfo *bankInfo, FILE *soundArchiveFile, u32 (*read
 	BITFLAG(bankInfo->optionParameter)
 
 	fseek(soundArchiveFile, bankInfo->filePosition + bankInfo->toWaveArchiveItemIDTable.offset, SEEK_SET);
-	CATCH(readCTRItemIDTable(&bankInfo->waveArchiveItemIDTable, soundArchiveFile, readBytes, pointerList) != STATUS_OK, "item ID table", "bank info")
+	CATCH(readCTR_SoundArchive_ItemIDTable(&bankInfo->waveArchiveItemIDTable, soundArchiveFile, readBytes, pointerList) != STATUS_OK, "item ID table", "bank info")
 
 	return STATUS_OK;
 }
 
 Status
-readCTRWaveArchiveInfo(struct CTRWaveArchiveInfo *waveArchiveInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
+readCTR_SoundArchive_WaveArchiveInfo(struct CTR_SoundArchive_WaveArchiveInfo *waveArchiveInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	waveArchiveInfo->filePosition = ftell(soundArchiveFile);
 	waveArchiveInfo->fileID = readBytes(soundArchiveFile, 4);
@@ -449,7 +449,7 @@ readCTRWaveArchiveInfo(struct CTRWaveArchiveInfo *waveArchiveInfo, FILE *soundAr
 }
 
 Status
-readCTRGroupInfo(struct CTRGroupInfo *groupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
+readCTR_SoundArchive_GroupInfo(struct CTR_SoundArchive_GroupInfo *groupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	groupInfo->filePosition = ftell(soundArchiveFile);
 	groupInfo->fileID = readBytes(soundArchiveFile, 4);
@@ -464,7 +464,7 @@ readCTRGroupInfo(struct CTRGroupInfo *groupInfo, FILE *soundArchiveFile, u32 (*r
 }
 
 Status
-readCTRPlayerInfo(struct CTRPlayerInfo *playerInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
+readCTR_SoundArchive_PlayerInfo(struct CTR_SoundArchive_PlayerInfo *playerInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	playerInfo->filePosition = ftell(soundArchiveFile);
 	playerInfo->playableSoundMax = readBytes(soundArchiveFile, 4);
@@ -479,7 +479,7 @@ readCTRPlayerInfo(struct CTRPlayerInfo *playerInfo, FILE *soundArchiveFile, u32 
 }
 
 Status
-readCTRInternalFileLocationInfo(struct CTRInternalFileLocationInfo *internalFileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
+readCTR_SoundArchive_InternalFileLocationInfo(struct CTR_SoundArchive_InternalFileLocationInfo *internalFileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
 {
 	internalFileInfo->filePosition = ftell(soundArchiveFile);
 	CATCH(readLinkWithLength(&internalFileInfo->toDataFromFilePartitionBody, soundArchiveFile, readBytes) != STATUS_OK, "internal file location data link", "internal file location info")
@@ -488,7 +488,7 @@ readCTRInternalFileLocationInfo(struct CTRInternalFileLocationInfo *internalFile
 }
 
 Status
-readCTRExternalFileLocationInfo(struct CTRExternalFileLocationInfo *externalFileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
+readCTR_SoundArchive_ExternalFileLocationInfo(struct CTR_SoundArchive_ExternalFileLocationInfo *externalFileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
 {
 	externalFileInfo->filePosition = ftell(soundArchiveFile);
 	/* TODO: Read path */
@@ -497,7 +497,7 @@ readCTRExternalFileLocationInfo(struct CTRExternalFileLocationInfo *externalFile
 }
 
 Status
-readCTRFileInfo(struct CTRFileInfo *fileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
+readCTR_SoundArchive_FileInfo(struct CTR_SoundArchive_FileInfo *fileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	fileInfo->filePosition = ftell(soundArchiveFile);
 	CATCH(readLink(&fileInfo->toFileLocationInfo, soundArchiveFile, readBytes) != STATUS_OK, "file location info link", "file info")
@@ -505,10 +505,10 @@ readCTRFileInfo(struct CTRFileInfo *fileInfo, FILE *soundArchiveFile, u32 (*read
 
 	switch (fileInfo->toFileLocationInfo.referenceID) {
 	case REFID_SOUNDARCHIVEFILE_INTERNALFILEINFO:
-		CATCH(readCTRInternalFileLocationInfo(&fileInfo->internalFileInfo, soundArchiveFile, readBytes) != STATUS_OK, "internal file location info", "file info")
+		CATCH(readCTR_SoundArchive_InternalFileLocationInfo(&fileInfo->internalFileInfo, soundArchiveFile, readBytes) != STATUS_OK, "internal file location info", "file info")
 		break;
 	case REFID_SOUNDARCHIVEFILE_EXTERNALFILEINFO:
-		CATCH(readCTRExternalFileLocationInfo(&fileInfo->externalFileInfo, soundArchiveFile, readBytes) != STATUS_OK, "external file location info", "file info")
+		CATCH(readCTR_SoundArchive_ExternalFileLocationInfo(&fileInfo->externalFileInfo, soundArchiveFile, readBytes) != STATUS_OK, "external file location info", "file info")
 		break;
 	default:
 		break;
@@ -518,7 +518,7 @@ readCTRFileInfo(struct CTRFileInfo *fileInfo, FILE *soundArchiveFile, u32 (*read
 }
 
 Status
-readCTRSoundArchivePlayerInfo(struct CTRSoundArchivePlayerInfo *soundArchivePlayerInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
+readCTR_SoundArchive_SoundArchivePlayerInfo(struct CTR_SoundArchive_SoundArchivePlayerInfo *soundArchivePlayerInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes))
 {
 	soundArchivePlayerInfo->filePosition = ftell(soundArchiveFile);
 	
@@ -536,7 +536,7 @@ readCTRSoundArchivePlayerInfo(struct CTRSoundArchivePlayerInfo *soundArchivePlay
 }
 
 Status
-readCTRSoundArchiveInfoPartition(struct CTRSoundArchiveInfoPartition *infoPartition, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
+readCTR_SoundArchive_InfoPartition(struct CTR_SoundArchive_InfoPartition *infoPartition, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList)
 {
 	infoPartition->header.filePosition = ftell(soundArchiveFile);
 	CATCH(readPartitionHeader(&infoPartition->header.partitionHeader, soundArchiveFile, "INFO", readBytes) != STATUS_OK, "header", "info partition")
@@ -547,35 +547,35 @@ readCTRSoundArchiveInfoPartition(struct CTRSoundArchiveInfoPartition *infoPartit
 	}
 
 	/* Sound info */
-	INFO(0, soundInfoLinkTable, soundInfo, struct CTRSoundInfo, readCTRSoundInfo)
+	INFO(0, soundInfoLinkTable, soundInfo, struct CTR_SoundArchive_SoundInfo, readCTR_SoundArchive_SoundInfo)
 
 	/* Sound group info */
-	INFO(1, soundGroupInfoLinkTable, soundGroupInfo, struct CTRSoundGroupInfo, readCTRSoundGroupInfo)
+	INFO(1, soundGroupInfoLinkTable, soundGroupInfo, struct CTR_SoundArchive_SoundGroupInfo, readCTR_SoundArchive_SoundGroupInfo)
 
 	/* Bank info */
-	INFO(2, bankInfoLinkTable, bankInfo, struct CTRBankInfo, readCTRBankInfo)
+	INFO(2, bankInfoLinkTable, bankInfo, struct CTR_SoundArchive_BankInfo, readCTR_SoundArchive_BankInfo)
 
 	/* Wave archive info */
-	INFO(3, waveArchiveInfoLinkTable, waveArchiveInfo, struct CTRWaveArchiveInfo, readCTRWaveArchiveInfo)
+	INFO(3, waveArchiveInfoLinkTable, waveArchiveInfo, struct CTR_SoundArchive_WaveArchiveInfo, readCTR_SoundArchive_WaveArchiveInfo)
 
 	/* Group info */
-	INFO(4, groupInfoLinkTable, groupInfo, struct CTRGroupInfo, readCTRGroupInfo)
+	INFO(4, groupInfoLinkTable, groupInfo, struct CTR_SoundArchive_GroupInfo, readCTR_SoundArchive_GroupInfo)
 
 	/* Player info */
-	INFO(5, playerInfoLinkTable, playerInfo, struct CTRPlayerInfo, readCTRPlayerInfo)
+	INFO(5, playerInfoLinkTable, playerInfo, struct CTR_SoundArchive_PlayerInfo, readCTR_SoundArchive_PlayerInfo)
 
 	/* File info */
-	INFO(6, fileInfoLinkTable, fileInfo, struct CTRFileInfo, readCTRFileInfo)
+	INFO(6, fileInfoLinkTable, fileInfo, struct CTR_SoundArchive_FileInfo, readCTR_SoundArchive_FileInfo)
 
 	/* Sound Archive Player Info */
 	fseek(soundArchiveFile, infoPartition->body.filePosition + infoPartition->body.tableLinks[7].offset, SEEK_SET);
-	CATCH(readCTRSoundArchivePlayerInfo(&infoPartition->body.soundArchivePlayerInfo, soundArchiveFile, readBytes) != STATUS_OK, "sound archive player info", "info partition")
+	CATCH(readCTR_SoundArchive_SoundArchivePlayerInfo(&infoPartition->body.soundArchivePlayerInfo, soundArchiveFile, readBytes) != STATUS_OK, "sound archive player info", "info partition")
 
 	return STATUS_OK;
 }
 
 Status
-readCTRSoundArchiveFilePartition(struct CTRSoundArchiveFilePartition *filePartition, FILE *soundArchiveFile, struct CTRSoundArchiveInfoPartition *infoPartition, u32 (*readBytes)(FILE *, u32), struct PointerList *pointerList)
+readCTR_SoundArchive_FilePartition(struct CTR_SoundArchive_FilePartition *filePartition, FILE *soundArchiveFile, struct CTR_SoundArchive_InfoPartition *infoPartition, u32 (*readBytes)(FILE *, u32), struct PointerList *pointerList)
 {
 	filePartition->header.filePosition = ftell(soundArchiveFile);
 	CATCH(readPartitionHeader(&filePartition->header.partitionHeader, soundArchiveFile, "FILE", readBytes) != STATUS_OK, "header", "file partition")
@@ -595,7 +595,7 @@ readCTRSoundArchiveFilePartition(struct CTRSoundArchiveFilePartition *filePartit
 }
 
 Status
-readCTRSoundArchive(CTRSoundArchive *soundArchive, FILE *soundArchiveFile)
+readCTRSoundArchive(CTR_SoundArchive *soundArchive, FILE *soundArchiveFile)
 {
 	printf("Reading sound archive...\n");
 	soundArchive->filePosition = ftell(soundArchiveFile);
@@ -607,25 +607,25 @@ readCTRSoundArchive(CTRSoundArchive *soundArchive, FILE *soundArchiveFile)
 
 	/* Header */
 	printf("Reading sound archive file header...\n");
-	CATCH(readCTRSoundArchiveHeader(&soundArchive->header, soundArchiveFile, &readBytes) != STATUS_OK, "header", "sound archive file")
+	CATCH(readCTR_SoundArchive_FileHeader(&soundArchive->header, soundArchiveFile, &readBytes) != STATUS_OK, "header", "sound archive file")
 	printf("File header read.\n");
 
 	/* String Partition */
 	printf("Reading sound archive string partition...\n");
 	fseek(soundArchiveFile, soundArchive->header.partitionLinks[0].offset, SEEK_SET);
-	CATCH(readCTRSoundArchiveStringPartition(&soundArchive->stringPartition, soundArchiveFile, readBytes, &soundArchive->pointerList) != STATUS_OK, "string partition", "sound archive file")
+	CATCH(readCTR_SoundArchive_StringPartition(&soundArchive->stringPartition, soundArchiveFile, readBytes, &soundArchive->pointerList) != STATUS_OK, "string partition", "sound archive file")
 	printf("String partition read.\n");
 
 	/* Info Partition */
 	printf("Reading sound info partition...\n");
 	fseek(soundArchiveFile, soundArchive->header.partitionLinks[1].offset, SEEK_SET);
-	CATCH(readCTRSoundArchiveInfoPartition(&soundArchive->infoPartition, soundArchiveFile, readBytes, &soundArchive->pointerList) != STATUS_OK, "info partition", "sound archive file")
+	CATCH(readCTR_SoundArchive_InfoPartition(&soundArchive->infoPartition, soundArchiveFile, readBytes, &soundArchive->pointerList) != STATUS_OK, "info partition", "sound archive file")
 	printf("Info partition read.\n");
 
 	/* File Partition */
 	printf("Reading sound archive file partition...\n");
 	fseek(soundArchiveFile, soundArchive->header.partitionLinks[2].offset, SEEK_SET);
-	CATCH(readCTRSoundArchiveFilePartition(&soundArchive->filePartition, soundArchiveFile, &soundArchive->infoPartition, readBytes, &soundArchive->pointerList) != STATUS_OK, "file partition", "sound archive file")
+	CATCH(readCTR_SoundArchive_FilePartition(&soundArchive->filePartition, soundArchiveFile, &soundArchive->infoPartition, readBytes, &soundArchive->pointerList) != STATUS_OK, "file partition", "sound archive file")
 	printf("File partition read.\n");
 
 	printf("Sound archive read!\n");

@@ -1,19 +1,19 @@
 /* See LICENSE file for copyright and license details. */
 #include "../common.h"
 
-struct CTRItemID {
+struct CTR_SoundArchive_ItemID {
 	u32 filePosition;
 	u32 ID; /* 3 bytes */
 	u8 type;
 };
 
-struct CTRItemIDTable {
+struct CTR_SoundArchive_ItemIDTable {
 	u32 filePosition;
 	u32 count;
-	struct CTRItemID *table;
+	struct CTR_SoundArchive_ItemID *table;
 };
 
-struct CTRSendValue {
+struct CTR_SoundArchive_SendValue {
 	u32 filePosition;
 	u8 mainSend;
 	u8 fxSend[2];
@@ -25,13 +25,13 @@ typedef struct {
 
 	u32 filePosition;
 
-	struct CTRSoundArchiveHeader{
+	struct CTR_SoundArchive_FileHeader{
 		u32 filePosition;
 		struct FileHeader fileHeader;
 		struct LinkWithLength partitionLinks[3];
 	} header;
 
-	struct CTRSoundArchiveStringPartition {
+	struct CTR_SoundArchive_StringPartition {
 		struct {
 			u32 filePosition;
 			struct PartitionHeader partitionHeader;
@@ -46,29 +46,29 @@ typedef struct {
 				u32 filePosition;
 				char *filename;
 			} *filenameTable;
-			struct CTRPatriciaTree {
+			struct CTR_SoundArchive_PatriciaTree {
 				u32 filePosition;
 				u32 rootIndex;
-				struct CTRNodeTable {
+				struct CTR_SoundArchive_NodeTable {
 					u32 filePosition;
 					u32 count;
-					struct CTRNode {
+					struct CTR_SoundArchive_Node {
 						u32 filePosition;
 						u16 flags;
 						u16 bitIndex;
 						u32 leftIndex;
 						u32 rightIndex;
 						u32 stringID;
-						struct CTRItemID itemID;
+						struct CTR_SoundArchive_ItemID itemID;
 					} *nodes;
 					
-					struct CTRNode **itemIDToNode;
+					struct CTR_SoundArchive_Node **itemIDToNode;
 				} nodeTable;
 			} patriciaTree;
 		} body;
 	} stringPartition;
 
-	struct CTRSoundArchiveInfoPartition {
+	struct CTR_SoundArchive_InfoPartition {
 		struct {
 			u32 filePosition;
 			struct PartitionHeader partitionHeader;
@@ -79,10 +79,10 @@ typedef struct {
 			struct Link tableLinks[8];
 
 			struct LinkTable soundInfoLinkTable;
-			struct CTRSoundInfo {
+			struct CTR_SoundArchive_SoundInfo {
 				u32 filePosition;
 				u32 fileID;
-				struct CTRItemID playerID;
+				struct CTR_SoundArchive_ItemID playerID;
 				u8 volume;
 				/* 3 byte padding */
 				struct Link extraInfoLink;
@@ -116,7 +116,7 @@ typedef struct {
 				Bool isFrontBypass;
 
 				/* To 3D sound info */
-				struct CTRSound3DInfo {
+				struct CTR_SoundArchive_Sound3DInfo {
 					u32 filePosition;
 					u32 flags;
 					f32 decayRatio;
@@ -127,7 +127,7 @@ typedef struct {
 				} sound3DInfo;
 
 				/* Extra info types */
-				struct CTRStreamSoundInfo {
+				struct CTR_SoundArchive_StreamSoundInfo {
 					u32 filePosition;
 					u16 allocateTrackFlags;
 					u16 allocateChannelCount;
@@ -141,7 +141,7 @@ typedef struct {
 					struct LinkTable streamTrackInfoLinkTable;
 
 					/* To stream track info */
-					struct CTRStreamTrackInfo {
+					struct CTR_SoundArchive_StreamTrackInfo {
 						u32 filePosition;
 						u8 volume;
 						u8 pan;
@@ -158,14 +158,14 @@ typedef struct {
 						struct U8Table globalChannelIndexTable;
 
 						/* To send value */
-						struct CTRSendValue sendValue;
+						struct CTR_SoundArchive_SendValue sendValue;
 					} *streamTrackInfo;
 
 					/* To send value */
-					struct CTRSendValue sendValue;
+					struct CTR_SoundArchive_SendValue sendValue;
 
 					/* To stream sound extension */
-					struct CTRStreamSoundExtension {
+					struct CTR_SoundArchive_StreamSoundExtension {
 						u32 filePosition;
 						u32 streamTypeInfo;
 						u32 loopStartFrame;
@@ -179,7 +179,7 @@ typedef struct {
 				} streamSoundInfo;
 				/* TODO: legacy stream sound info */
 
-				struct CTRWaveSoundInfo {
+				struct CTR_SoundArchive_WaveSoundInfo {
 					u32 filePosition;
 					u32 index;
 					u32 allocateTrackCount;
@@ -193,7 +193,7 @@ typedef struct {
 					} priorityParams;
 				} waveSoundInfo;
 
-				struct CTRSequenceSoundInfo {
+				struct CTR_SoundArchive_SequenceSoundInfo {
 					u32 filePosition;
 					struct Link toBankIDTable;
 					u32 allocateTrackFlags;
@@ -213,10 +213,10 @@ typedef struct {
 			} *soundInfo;
 
 			struct LinkTable soundGroupInfoLinkTable;
-			struct CTRSoundGroupInfo {
+			struct CTR_SoundArchive_SoundGroupInfo {
 				u32 filePosition;
-				struct CTRItemID startID; /* 3 bytes */
-				struct CTRItemID endID; /* 3 bytes */
+				struct CTR_SoundArchive_ItemID startID; /* 3 bytes */
+				struct CTR_SoundArchive_ItemID endID; /* 3 bytes */
 				struct Link toFileIdTable;
 				struct Link toWaveSoundGroupInfo; /* 0x2205 */
 				struct OptionParameter optionParameter;
@@ -228,18 +228,18 @@ typedef struct {
 				struct U32Table fileIDTable;
 
 				/* To wave sound group info */
-				struct CTRWaveSoundGroupInfo {
+				struct CTR_SoundArchive_WaveSoundGroupInfo {
 					u32 filePosition;
 					struct Link toWaveArchiveItemIDTable;
 					struct OptionParameter optionParameter;
 
 					/* To table */
-					struct CTRItemIDTable waveArchiveIDTable;
+					struct CTR_SoundArchive_ItemIDTable waveArchiveIDTable;
 				} waveSoundGroupInfo;
 			} *soundGroupInfo;
 
 			struct LinkTable bankInfoLinkTable;
-			struct CTRBankInfo {
+			struct CTR_SoundArchive_BankInfo {
 				u32 filePosition;
 				u32 fileID;
 				struct Link toWaveArchiveItemIDTable;
@@ -249,11 +249,11 @@ typedef struct {
 				u32 stringID; /* 0x00 */
 
 				/* To table */
-				struct CTRItemIDTable waveArchiveItemIDTable;
+				struct CTR_SoundArchive_ItemIDTable waveArchiveItemIDTable;
 			} *bankInfo;
 
 			struct LinkTable waveArchiveInfoLinkTable;
-			struct CTRWaveArchiveInfo {
+			struct CTR_SoundArchive_WaveArchiveInfo {
 				u32 filePosition;
 				u32 fileID;
 				Bool isLoadIndividual;
@@ -266,7 +266,7 @@ typedef struct {
 			} *waveArchiveInfo;
 
 			struct LinkTable groupInfoLinkTable;
-			struct CTRGroupInfo {
+			struct CTR_SoundArchive_GroupInfo {
 				u32 filePosition;
 				u32 fileID;
 				struct OptionParameter optionParameter;
@@ -276,7 +276,7 @@ typedef struct {
 			} *groupInfo;
 
 			struct LinkTable playerInfoLinkTable;
-			struct CTRPlayerInfo {
+			struct CTR_SoundArchive_PlayerInfo {
 				u32 filePosition;
 				u32 playableSoundMax;
 				struct OptionParameter optionParameter;
@@ -287,24 +287,24 @@ typedef struct {
 			} *playerInfo;
 
 			struct LinkTable fileInfoLinkTable;
-			struct CTRFileInfo {
+			struct CTR_SoundArchive_FileInfo {
 				u32 filePosition;
 				struct Link toFileLocationInfo;
 				struct OptionParameter optionParameter;
 
 				/* File Info types */
-				struct CTRInternalFileLocationInfo { /* 0x220c */
+				struct CTR_SoundArchive_InternalFileLocationInfo { /* 0x220c */
 					u32 filePosition;
 					struct LinkWithLength toDataFromFilePartitionBody; /* Offset or size not 0xffffffff */
 				} internalFileInfo;
 
-				struct CTRExternalFileLocationInfo { /* 0x220d */
+				struct CTR_SoundArchive_ExternalFileLocationInfo { /* 0x220d */
 					u32 filePosition;
 					char *filePath; /* Null-terminated */
 				} externalFileInfo;
 			} *fileInfo;
 
-			struct CTRSoundArchivePlayerInfo {
+			struct CTR_SoundArchive_SoundArchivePlayerInfo {
 				u32 filePosition;
 				u16 sequenceSoundMax;
 				u16 sequenceTrackMax;
@@ -320,7 +320,7 @@ typedef struct {
 		} body;
 	} infoPartition;
 
-	struct CTRSoundArchiveFilePartition {
+	struct CTR_SoundArchive_FilePartition {
 		struct {
 			u32 filePosition;
 			struct PartitionHeader partitionHeader;
@@ -333,88 +333,88 @@ typedef struct {
 		char **files;
 	} filePartition;
 
-} CTRSoundArchive;
+} CTR_SoundArchive;
 
 Status
-readCTRItemID(struct CTRItemID *itemID, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
+readCTR_SoundArchive_ItemID(struct CTR_SoundArchive_ItemID *itemID, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
 
 Status
-readCTRItemIDTable(struct CTRItemIDTable *itemIDTable, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+readCTR_SoundArchive_ItemIDTable(struct CTR_SoundArchive_ItemIDTable *itemIDTable, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRSendValue(struct CTRSendValue *sendValue, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
+readCTR_SoundArchive_SendValue(struct CTR_SoundArchive_SendValue *sendValue, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
 
 Status
-readCTRSoundArchiveHeader(struct CTRSoundArchiveHeader *header, FILE *soundArchiveFile, u32 (**readBytesPointer)(FILE *, u32));
+readCTR_SoundArchive_FileHeader(struct CTR_SoundArchive_FileHeader *header, FILE *soundArchiveFile, u32 (**readBytesPointer)(FILE *, u32));
 
 Status
-readCTRNode(struct CTRNode *node, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes)) ;
+readCTR_SoundArchive_Node(struct CTR_SoundArchive_Node *node, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes)) ;
 
 Status
-readCTRNodeTable(struct CTRNodeTable *nodeTable, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+readCTR_SoundArchive_NodeTable(struct CTR_SoundArchive_NodeTable *nodeTable, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRPatriciaTree(struct CTRPatriciaTree *patriciaTree, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+readCTR_SoundArchive_PatriciaTree(struct CTR_SoundArchive_PatriciaTree *patriciaTree, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRSoundArchiveStringPartition(struct CTRSoundArchiveStringPartition *stringPartition, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+readCTR_SoundArchive_StringPartition(struct CTR_SoundArchive_StringPartition *stringPartition, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRSound3DInfo(struct CTRSound3DInfo *sound3DInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
+readCTR_SoundArchive_Sound3DInfo(struct CTR_SoundArchive_Sound3DInfo *sound3DInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
 
 Status
-readCTRStreamTrackInfo(struct CTRStreamTrackInfo *streamTrackInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+readCTR_SoundArchive_StreamTrackInfo(struct CTR_SoundArchive_StreamTrackInfo *streamTrackInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRStreamSoundExtension(struct CTRStreamSoundExtension *streamSoundExtension, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
+readCTR_SoundArchive_StreamSoundExtension(struct CTR_SoundArchive_StreamSoundExtension *streamSoundExtension, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
 
 Status
-readCTRStreamSoundInfo(struct CTRStreamSoundInfo *streamSoundInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+readCTR_SoundArchive_StreamSoundInfo(struct CTR_SoundArchive_StreamSoundInfo *streamSoundInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRWaveSoundInfo(struct CTRWaveSoundInfo *waveSoundInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
+readCTR_SoundArchive_WaveSoundInfo(struct CTR_SoundArchive_WaveSoundInfo *waveSoundInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
 
 Status
-readCTRSequenceSoundInfo(struct CTRSequenceSoundInfo *sequenceSoundInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+readCTR_SoundArchive_SequenceSoundInfo(struct CTR_SoundArchive_SequenceSoundInfo *sequenceSoundInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRSoundInfo(struct CTRSoundInfo *soundInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+readCTR_SoundArchive_SoundInfo(struct CTR_SoundArchive_SoundInfo *soundInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRWaveSoundGroupInfo(struct CTRWaveSoundGroupInfo *waveSoundGroupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+readCTR_SoundArchive_WaveSoundGroupInfo(struct CTR_SoundArchive_WaveSoundGroupInfo *waveSoundGroupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRSoundGroupInfo(struct CTRSoundGroupInfo *soundGroupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+readCTR_SoundArchive_SoundGroupInfo(struct CTR_SoundArchive_SoundGroupInfo *soundGroupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRBankInfo(struct CTRBankInfo *bankInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+readCTR_SoundArchive_BankInfo(struct CTR_SoundArchive_BankInfo *bankInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRWaveArchiveInfo(struct CTRWaveArchiveInfo *waveArchiveInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+readCTR_SoundArchive_WaveArchiveInfo(struct CTR_SoundArchive_WaveArchiveInfo *waveArchiveInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRGroupInfo(struct CTRGroupInfo *groupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+readCTR_SoundArchive_GroupInfo(struct CTR_SoundArchive_GroupInfo *groupInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRPlayerInfo(struct CTRPlayerInfo *playerInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+readCTR_SoundArchive_PlayerInfo(struct CTR_SoundArchive_PlayerInfo *playerInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRInternalFileLocationInfo(struct CTRInternalFileLocationInfo *internalFileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
+readCTR_SoundArchive_InternalFileLocationInfo(struct CTR_SoundArchive_InternalFileLocationInfo *internalFileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
 
 Status
-readCTRExternalFileLocationInfo(struct CTRExternalFileLocationInfo *externalFileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
+readCTR_SoundArchive_ExternalFileLocationInfo(struct CTR_SoundArchive_ExternalFileLocationInfo *externalFileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
 
 Status
-readCTRFileInfo(struct CTRFileInfo *fileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+readCTR_SoundArchive_FileInfo(struct CTR_SoundArchive_FileInfo *fileInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRSoundArchivePlayerInfo(struct CTRSoundArchivePlayerInfo *soundArchivePlayerInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
+readCTR_SoundArchive_SoundArchivePlayerInfo(struct CTR_SoundArchive_SoundArchivePlayerInfo *soundArchivePlayerInfo, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes));
 
 Status
-readCTRSoundArchiveInfoPartition(struct CTRSoundArchiveInfoPartition *infoPartition, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+readCTR_SoundArchive_InfoPartition(struct CTR_SoundArchive_InfoPartition *infoPartition, FILE *soundArchiveFile, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
 
 Status
-readCTRSoundArchiveFilePartition(struct CTRSoundArchiveFilePartition *filePartition, FILE *soundArchiveFile, struct CTRSoundArchiveInfoPartition *infoPartition, u32 (*readBytes)(FILE *, u32), struct PointerList *pointerList);
+readCTR_SoundArchive_FilePartition(struct CTR_SoundArchive_FilePartition *filePartition, FILE *soundArchiveFile, struct CTR_SoundArchive_InfoPartition *infoPartition, u32 (*readBytes)(FILE *, u32), struct PointerList *pointerList);
 
 Status
-readCTRSoundArchive(CTRSoundArchive *soundArchive, FILE *soundArchiveFile);
+readCTRSoundArchive(CTR_SoundArchive *soundArchive, FILE *soundArchiveFile);
