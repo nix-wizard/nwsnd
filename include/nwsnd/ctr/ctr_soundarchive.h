@@ -1,5 +1,8 @@
 /* See LICENSE file for copyright and license details. */
-#include "../common.h"
+#ifndef NWSND_CTR_SOUNDARCHIVE_H
+#define NWSND_CTR_SOUNDARCHIVE_H
+
+#include "nwsnd/common.h"
 
 struct CTR_SoundArchive_ItemID {
 	u32 filePosition;
@@ -417,4 +420,6 @@ Status
 readCTR_SoundArchive_FilePartition(struct CTR_SoundArchive_FilePartition *filePartition, FILE *soundArchiveFile, struct CTR_SoundArchive_InfoPartition *infoPartition, u32 (*readBytes)(FILE *, u32), struct PointerList *pointerList);
 
 Status
-readCTRSoundArchive(CTR_SoundArchive *soundArchive, FILE *soundArchiveFile);
+readCTR_SoundArchive(CTR_SoundArchive *soundArchive, FILE *soundArchiveFile);
+
+#endif

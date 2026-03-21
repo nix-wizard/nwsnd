@@ -5,7 +5,7 @@ ARFLAGS = rcs
 
 LIB = libnwsnd.a
 
-SRC = src/common.c src/ctr/ctr_soundarchive.c
+SRC = src/common.c src/ctr/ctr_soundarchive.c src/ctr/ctr_wavearchive.c
 OBJ = $(SRC:src/%.c=build/%.o)
 
 all: $(LIB)

@@ -1,4 +1,7 @@
 /* See LICENSE file for copyright and license details. */
+#ifndef NWSND_COMMON_H
+#define NWSND_COMMON_H
+
 #include <stdio.h>
 
 #define ALLOCATE(POINTER, SIZE) POINTER = malloc(SIZE); addPointerToPointerList(POINTER, pointerList);
@@ -304,3 +307,5 @@ readU8Table(struct U8Table *u8Table, FILE *file, u32 (*readBytes)(FILE *file, u3
 
 Status
 readU32Table(struct U32Table *u32Table, FILE *file, u32 (*readBytes)(FILE *file, u32 bytes), struct PointerList *pointerList);
+
+#endif

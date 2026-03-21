@@ -62,11 +62,11 @@ Status
 readCTR_SoundArchive_FileHeader(struct CTR_SoundArchive_FileHeader *header, FILE *soundArchiveFile, u32 (**readBytesPointer)(FILE *, u32))
 {
 	header->filePosition = ftell(soundArchiveFile);
-	CATCH(readFileHeader(&header->fileHeader, soundArchiveFile, "CSAR", readBytesPointer) != STATUS_OK, "file header", "file")
+	CATCH(readFileHeader(&header->fileHeader, soundArchiveFile, "CSAR", readBytesPointer) != STATUS_OK, "file header", "sound archive header")
 
 	u32 (*readBytes)(FILE *file, u32 bytes) = (*readBytesPointer);
 
-	for (u32 i = 0; i < 3; i++) {
+	for (u32 i = 0; i < 3; i += 1) {
 		CATCH(readLinkWithLength(&header->partitionLinks[i], soundArchiveFile, readBytes) != STATUS_OK, "link", "sound archive header")
 	}
 	
@@ -132,7 +132,7 @@ readCTR_SoundArchive_StringPartition(struct CTR_SoundArchive_StringPartition *st
 
 	/* Body */
 	stringPartition->body.filePosition = ftell(soundArchiveFile);
-	for (u32 i = 0; i < 2; i++) {
+	for (u32 i = 0; i < 2; i += 1) {
 		CATCH(readLink(&stringPartition->body.tableLinks[i], soundArchiveFile, readBytes) != STATUS_OK, "link", "string partition")
 	}
 
@@ -145,7 +145,7 @@ readCTR_SoundArchive_StringPartition(struct CTR_SoundArchive_StringPartition *st
 	readLinkWithLengthTable(&stringPartition->body.filenameLinkTable, soundArchiveFile, readBytes, pointerList);
 
 	ALLOCATE(stringPartition->body.filenameTable, stringPartition->body.filenameLinkTable.size)
-	for (u32 i = 0; i < stringPartition->body.filenameLinkTable.count; i++) {
+	for (u32 i = 0; i < stringPartition->body.filenameLinkTable.count; i += 1) {
 		fseek(soundArchiveFile, filenameTableBase + stringPartition->body.filenameLinkTable.table[i].offset, SEEK_SET);
 		stringPartition->body.filenameTable[i].filePosition = ftell(soundArchiveFile);
 		ALLOCATE(stringPartition->body.filenameTable[i].filename, stringPartition->body.filenameLinkTable.table[i].length)
@@ -595,7 +595,7 @@ readCTR_SoundArchive_FilePartition(struct CTR_SoundArchive_FilePartition *filePa
 }
 
 Status
-readCTRSoundArchive(CTR_SoundArchive *soundArchive, FILE *soundArchiveFile)
+readCTR_SoundArchive(CTR_SoundArchive *soundArchive, FILE *soundArchiveFile)
 {
 	printf("Reading sound archive...\n");
 	soundArchive->filePosition = ftell(soundArchiveFile);

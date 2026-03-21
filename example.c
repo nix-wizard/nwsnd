@@ -12,8 +12,8 @@ main(int argc, char **argv)
 			return 1;
 		}
 		
-		CTRSoundArchive soundArchive;
-		if (readCTRSoundArchive(&soundArchive, soundArchiveFile) != STATUS_OK) {
+		CTR_SoundArchive soundArchive;
+		if (readCTR_SoundArchive(&soundArchive, soundArchiveFile) != STATUS_OK) {
 			fprintf(stderr, "Failed to read sound archive!\n");
 			return 1;
 		}
